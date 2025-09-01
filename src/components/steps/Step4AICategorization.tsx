@@ -143,22 +143,11 @@ export default function Step4AICategorization({
   };
 
   const handleNext = () => {
-    // Convert business plans to categories for compatibility with the expected Step4Props
-    const generatedCategories: Category[] = businessPlans.map((plan, index) => ({
-      id: plan.id,
-      name: plan.title,
-      description: plan.coreProblem,
-      keywords: plan.keyFeatures.slice(0, 5),
-      postCount: Math.floor(scrapedData.length / businessPlans.length),
-      percentage: Math.floor(100 / businessPlans.length),
-      confidence: plan.feasibility / 10,
-      samplePosts: scrapedData.slice(index * 3, (index + 1) * 3),
-      tags: [`market-potential-${plan.marketPotential}`, `feasibility-${plan.feasibility}`],
-      selected: true
-    }));
-
-    // Pass the converted categories to maintain compatibility
-    onNext(generatedCategories);
+    // Filter business plans based on selected IDs
+    const selectedPlans = businessPlans.filter(plan => selectedIdeaIds.includes(plan.id));
+    
+    // Pass the selected business plans
+    onNext(selectedPlans.length > 0 ? selectedPlans : businessPlans);
   };
 
   const handleIdeaToggle = (ideaId: string) => {

@@ -42,15 +42,8 @@ export default function Step1ResearchSetup({
   const [csvData, setCsvData] = useState<{ posts: RedditPost[]; source: string } | null>(null);
 
   const addKeyword = () => {
-    const input = currentKeyword.trim();
-    if (!input) return;
-    
-    // Handle comma-separated keywords
-    const keywordList = input.split(',').map(k => k.trim()).filter(Boolean);
-    const uniqueKeywords = keywordList.filter(k => !keywords.includes(k));
-    
-    if (uniqueKeywords.length > 0) {
-      setKeywords([...keywords, ...uniqueKeywords]);
+    if (currentKeyword.trim() && !keywords.includes(currentKeyword.trim())) {
+      setKeywords([...keywords, currentKeyword.trim()]);
       setCurrentKeyword('');
     }
   };
@@ -62,7 +55,25 @@ export default function Step1ResearchSetup({
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      addKeyword();
+      
+      // Add the current keyword if it's not empty
+      if (currentKeyword.trim() && !keywords.includes(currentKeyword.trim())) {
+        const newKeywords = [...keywords, currentKeyword.trim()];
+        setKeywords(newKeywords);
+        setCurrentKeyword('');
+        
+        // Auto-advance to next step if we have keywords
+        if (newKeywords.length > 0) {
+          console.log('🚀 Auto-advancing to next step with keywords:', newKeywords);
+          setTimeout(() => {
+            handleDiscoverSubreddits();
+          }, 300); // Small delay to show the keyword was added
+        }
+      } else if (keywords.length > 0) {
+        // If current input is empty but we have existing keywords, advance immediately
+        console.log('🚀 Auto-advancing to next step with existing keywords:', keywords);
+        handleDiscoverSubreddits();
+      }
     }
   };
 
@@ -291,7 +302,14 @@ export default function Step1ResearchSetup({
             Research Keywords {keywords.length > 0 && <span className="text-blue-600">({keywords.length} added)</span>}
           </label>
           
-
+          {/* Instructions */}
+          {keywords.length === 0 && (
+            <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
+              <p className="text-sm text-blue-700">
+                👆 <strong>Start here:</strong> Add keywords related to your research topic. You can type them in the box below or click on suggested topics.
+              </p>
+            </div>
+          )}
           
           {/* Keyword Input - Streamlined without Add button */}
           <div className="mb-4">
@@ -302,13 +320,14 @@ export default function Step1ResearchSetup({
                 value={currentKeyword}
                 onChange={(e) => setCurrentKeyword(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Enter keywords, use comma for more (example1, example2)"
+                placeholder="Enter a keyword and press Enter (e.g., 'artificial intelligence')"
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>
             {/* Helper text */}
-            <p className="text-sm text-gray-500 mt-2">
-              Use comma for more keywords (example1, example2)
+            <p className="text-sm text-gray-500 mt-2 flex items-center gap-1">
+              <span>💡</span>
+              <span>Type a keyword and press <kbd className="px-2 py-1 bg-gray-100 border rounded text-xs font-mono">Enter</kbd> to add it and advance to the next step</span>
             </p>
           </div>
 
@@ -336,7 +355,15 @@ export default function Step1ResearchSetup({
             </div>
           )}
 
-
+          {/* Keyword Requirement Notice */}
+          {keywords.length === 0 && (
+            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-yellow-800 text-sm flex items-center">
+                <span className="mr-2">⚠️</span>
+                Please add at least one keyword to start discovering relevant subreddits.
+              </p>
+            </div>
+          )}
           
           {/* Error Display for Reddit */}
           {error && (
@@ -360,17 +387,23 @@ export default function Step1ResearchSetup({
             </div>
           )}
           
-          {/* Action Button for Reddit */}
-          <div className="flex justify-center mb-6">
-            <button
-              onClick={handleDiscoverSubreddits}
-              disabled={keywords.length === 0 || isDiscovering}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
-            >
-              <ArrowRight className="w-5 h-5" />
-              Discover Subreddits Now
-            </button>
-          </div>
+          {/* Action Button for Reddit - Show manual discover option if needed */}
+          {!isDiscovering && keywords.length > 0 && (
+            <div className="flex justify-center mb-6">
+              <div className="text-center">
+                <button
+                  onClick={handleDiscoverSubreddits}
+                  className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                >
+                  <ArrowRight className="w-4 h-4" />
+                  Discover Subreddits Now
+                </button>
+                <p className="text-xs text-gray-500 mt-1">
+                  Or press Enter in the keyword input to add more keywords
+                </p>
+              </div>
+            </div>
+          )}
         </div>
         )}
 

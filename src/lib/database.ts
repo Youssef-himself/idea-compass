@@ -250,6 +250,7 @@ export class PostgresDatabase {
       executiveSummary: row.executive_summary,
       keyFindings: JSON.parse(row.key_findings),
       sections: row.sections,
+      businessPlans: row.business_plans ? JSON.parse(row.business_plans) : [], // Parse business plans or empty array
       metadata: row.metadata,
       recommendations: JSON.parse(row.recommendations),
       sourceCitation: [], // Will be populated from metadata

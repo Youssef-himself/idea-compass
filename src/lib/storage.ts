@@ -44,8 +44,12 @@ export const clearOldSessions = () => {
 };
 
 // Only clear old sessions once per server start
-if (!globalThis.__storageInitialized) {
+declare const globalThis: {
+  __storageInitialized?: boolean;
+} & typeof global;
+
+if (!(globalThis as any).__storageInitialized) {
   console.log('🔄 Initializing storage system...');
   clearOldSessions();
-  globalThis.__storageInitialized = true;
+  (globalThis as any).__storageInitialized = true;
 }

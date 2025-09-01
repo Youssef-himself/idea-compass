@@ -2,29 +2,51 @@ import { NextRequest, NextResponse } from 'next/server';
 import RedditAPI from '@/lib/reddit';
 import { APIResponse, RedditPost, SearchFilters, ScrapingProgress } from '@/types';
 import { progressStorage, dataStorage, debugStorage } from '@/lib/storage';
+import { requireAuthentication, requireResearchCredits, validateInput, sanitizeInput } from '@/lib/api-middleware';
 
 const scrapingJobs = new Map<string, Promise<void>>();
 
 
 export async function POST(request: NextRequest) {
   try {
-    const { subreddits, filters, sessionId, keywords } = await request.json();
+    // Check authentication
+    const authResult = await requireAuthentication(request);
+    if (!authResult.success) {
+      return authResult.response;
+    }
+
+    // Check and consume research credits
+    const creditResult = await requireResearchCredits(authResult.user.id, 'scrape_data');
+    if (!creditResult.success) {
+      return creditResult.response;
+    }
+
+    const rawData = await request.json();
+    const { subreddits, filters, sessionId, keywords } = sanitizeInput(rawData);
     
     console.log(`🚀 POST Start scraping request for sessionId: ${sessionId}`);
     console.log(`🎯 Subreddits:`, subreddits);
     console.log(`🔑 Keywords:`, keywords);
 
-    if (!subreddits || !Array.isArray(subreddits) || subreddits.length === 0) {
+    // Validate input
+    const validation = validateInput(rawData, [
+      { field: 'subreddits', type: 'array', required: true, minLength: 1, maxLength: 20 },
+      { field: 'sessionId', type: 'string', required: true, minLength: 1, maxLength: 100 },
+      { field: 'keywords', type: 'array', required: false, maxLength: 10 }
+    ]);
+
+    if (!validation.isValid) {
       return NextResponse.json<APIResponse<null>>({
         success: false,
-        error: 'Subreddits array is required',
+        error: `Invalid input: ${validation.errors.join(', ')}`,
       }, { status: 400 });
     }
 
-    if (!sessionId) {
+    // Additional validation for subreddits
+    if (!subreddits.every((sub: any) => typeof sub === 'string' && sub.length > 0 && sub.length <= 21)) {
       return NextResponse.json<APIResponse<null>>({
         success: false,
-        error: 'Session ID is required',
+        error: 'All subreddits must be valid strings (1-21 characters)',
       }, { status: 400 });
     }
 
@@ -41,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     // Initialize progress tracking
     const progressKey = `scraping_progress:${sessionId}`;
-    const initialProgress: ScrapingProgress[] = subreddits.map(sub => ({
+    const initialProgress: ScrapingProgress[] = subreddits.map((sub: string) => ({
       subreddit: sub,
       totalPosts: 0,
       processedPosts: 0,

@@ -3,8 +3,11 @@
 import Link from 'next/link';
 import { ArrowRight, BarChart3, Brain, Download, Search, Users, Zap, CheckCircle, Star, TrendingUp, Lightbulb, FileText, Rocket } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function HomePage() {
+  const { user } = useAuth();
+  
   // State for real reviews
   const [reviews, setReviews] = useState<any[]>([]);
   
@@ -22,6 +25,28 @@ export default function HomePage() {
       }
     }
   }, []);
+
+  // Smart authentication logic for research buttons
+  const getResearchLink = () => {
+    if (!user) {
+      // Not authenticated - redirect to signup/login with free plan context
+      return '/auth?plan=free&redirect=research';
+    }
+    
+    // Authenticated user - go directly to research
+    return '/research';
+  };
+
+  // Smart demo redirection logic
+  const getDemoLink = () => {
+    if (!user) {
+      // Not authenticated - show them the features and pricing first
+      return '/pricing';
+    }
+    
+    // Authenticated user - redirect to research since they can try it hands-on
+    return '/research';
+  };
 
   // Feature data with enhanced visuals
   const features = [
@@ -138,10 +163,10 @@ export default function HomePage() {
                 <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                   <div className="rounded-md shadow">
                     <Link
-                      href="/research"
+                      href={getResearchLink()}
                       className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50 md:py-4 md:text-lg md:px-10 transition-all duration-300 transform hover:scale-105"
                     >
-                      Start Free Research
+                      {user ? 'Start Research' : 'Start Free Research'}
                       <ArrowRight className="ml-2 w-5 h-5" />
                     </Link>
                   </div>
@@ -395,10 +420,10 @@ export default function HomePage() {
             </p>
             <div className="mt-8">
               <Link
-                href="/research"
+                href={getResearchLink()}
                 className="inline-flex items-center px-8 py-4 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50 transition-all duration-300 transform hover:scale-105 shadow-lg"
               >
-                Start Free Research
+                {user ? 'Start Research' : 'Start Free Research'}
                 <Rocket className="ml-2 w-5 h-5" />
               </Link>
             </div>
@@ -426,26 +451,26 @@ export default function HomePage() {
             </p>
             <div className="mt-10 flex flex-col sm:flex-row justify-center gap-4">
               <Link
-                href="/research"
+                href={getResearchLink()}
                 className="inline-flex items-center justify-center px-8 py-4 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50 transition-all duration-300 transform hover:scale-105 shadow-lg"
               >
-                Start Free Research
+                {user ? 'Start Research' : 'Start Free Research'}
                 <Rocket className="ml-2 w-5 h-5" />
               </Link>
               <Link
-                href="/demo"
+                href={getDemoLink()}
                 className="inline-flex items-center justify-center px-8 py-4 border border-white text-base font-medium rounded-md text-white bg-transparent hover:bg-white hover:bg-opacity-10 transition-all duration-300"
               >
-                Watch Demo
+                {user ? 'Try Live Demo' : 'View Plans'}
                 <Zap className="ml-2 w-5 h-5" />
               </Link>
             </div>
             <div className="mt-8 flex items-center justify-center text-blue-200">
               <CheckCircle className="w-5 h-5 mr-2" />
-              <span>No credit card required</span>
+              <span>{user ? 'Ready to research' : '3 free research credits'}</span>
               <span className="mx-2">•</span>
               <CheckCircle className="w-5 h-5 mr-2" />
-              <span>Cancel anytime</span>
+              <span>{user ? 'Start immediately' : 'No credit card required'}</span>
             </div>
           </div>
         </div>

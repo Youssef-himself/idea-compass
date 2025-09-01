@@ -1,5 +1,78 @@
 // Core data types for IdeaCompass
 
+// Authentication and User Types
+export interface User {
+  id: string;
+  email: string;
+  fullName?: string;
+  avatarUrl?: string;
+  createdAt: Date;
+  lastSignIn?: Date;
+}
+
+export interface UserProfile {
+  id: string;
+  userId: string;
+  email: string;
+  fullName?: string;
+  avatarUrl?: string;
+  plan: SubscriptionPlan;
+  researchCredits: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type SubscriptionPlan = 'free' | 'pro' | 'premium';
+
+export interface SubscriptionPlanDetails {
+  name: string;
+  price: number;
+  users: number;
+  researchCredits: number;
+  features: string[];
+}
+
+export interface UsageLog {
+  id: string;
+  userId: string;
+  action: string;
+  creditsUsed: number;
+  metadata?: Record<string, any>;
+  createdAt: Date;
+}
+
+export interface UsageStats {
+  totalCreditsUsed: number;
+  totalActions: number;
+  actionCounts: Record<string, number>;
+  recentLogs: UsageLog[];
+}
+
+export interface AuthContextType {
+  user: User | null;
+  profile: UserProfile | null;
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signUp: (email: string, password: string, fullName?: string) => Promise<{ success: boolean; error?: string; message?: string }>;
+  signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
+}
+
+export interface AuthFormData {
+  email: string;
+  password: string;
+  fullName?: string;
+  confirmPassword?: string;
+}
+
+export interface AuthFormErrors {
+  email?: string;
+  password?: string;
+  fullName?: string;
+  confirmPassword?: string;
+  general?: string;
+}
+
 export interface SearchFilters {
   postType: 'new' | 'top' | 'hot';
   timeRange: 'day' | 'week' | 'month' | 'year' | 'all';
@@ -129,6 +202,7 @@ export interface GeneratedReport {
     processingTime: number;
     totalIdeas: number;
     selectedIdeas: number;
+    categories?: string[];
   };
   recommendations: string[];
   sourceCitation: string[];
@@ -266,6 +340,7 @@ export interface Step4Props {
   onNext: (businessPlans: BusinessPlan[]) => void;
   onBack: () => void;
   sessionId: string;
+  categories?: Category[];
 }
 
 export interface Step5Props {
@@ -273,6 +348,9 @@ export interface Step5Props {
   businessPlans: BusinessPlan[];
   keywords: string[];
   sessionId: string;
+  categories?: Category[];
+  initialConfig?: AnalysisConfig;
+  onNext?: (config: AnalysisConfig) => void;
   onBack: () => void;
   onExportReport: (format: 'pdf' | 'docx' | 'html' | 'json' | 'csv') => void;
   onStartNew: () => void;

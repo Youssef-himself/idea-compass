@@ -52,7 +52,7 @@ export default function Step5AnalysisConfig({
       ...config,
       businessContext: businessContext.trim() || undefined,
     };
-    onNext(finalConfig);
+    onNext?.(finalConfig);
   };
 
   const predefinedGoals = [

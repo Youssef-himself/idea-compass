@@ -106,12 +106,15 @@ function generateMockReport(
     executiveSummary,
     keyFindings,
     sections,
+    businessPlans: [], // This endpoint doesn't generate business plans
     metadata: {
       totalPosts,
       totalSubreddits,
       analysisDate: new Date(),
       processingTime: 0, // Will be set by caller
-      categories: selectedCategories,
+      totalIdeas: 0, // This endpoint doesn't generate business ideas
+      selectedIdeas: 0, // This endpoint doesn't generate business ideas
+      categories: selectedCategories.map(cat => cat.name),
     },
     recommendations,
     sourceCitation: [

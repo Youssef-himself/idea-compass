@@ -494,12 +494,15 @@ Focus on business-actionable insights and concrete opportunities.
       executiveSummary: this.extractExecutiveSummary(response),
       keyFindings: this.extractKeyFindings(response),
       sections,
+      businessPlans: [], // This method doesn't generate business plans
       metadata: {
         totalPosts: posts.length,
         totalSubreddits: [...new Set(posts.map(p => p.subreddit))].length,
         analysisDate: new Date(),
         processingTime: 0, // Will be set by calling function
-        categories,
+        totalIdeas: 0, // This method doesn't generate business ideas
+        selectedIdeas: 0, // This method doesn't generate business ideas
+        categories: categories.map(cat => cat.name),
       },
       recommendations: this.extractRecommendations(response),
       sourceCitation: this.generateSourceCitations(posts),
@@ -798,7 +801,7 @@ Focus on being realistic and specific. Reference the actual problems you see in 
 
   private static extractFeaturesList(response: string): string[] {
     // Try to extract the full features section first
-    const featuresMatch = response.match(/4\.\s*Key Features[^:]*:?\s*(.*?)(?=\n\s*\*?\*?5\.|$)/s);
+    const featuresMatch = response.match(/4\.\s*Key Features[^:]*:?\s*([\s\S]*?)(?=\n\s*\*?\*?5\.|$)/);
     let featuresSection = featuresMatch ? featuresMatch[1] : '';
     
     // If that doesn't work, fall back to the simpler extraction

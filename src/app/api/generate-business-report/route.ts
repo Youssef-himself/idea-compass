@@ -1,29 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { APIResponse, RedditPost, BusinessPlan, GeneratedReport } from '@/types';
 import { kvDb, pgDb } from '@/lib/database';
+import { requireAuthentication, requireResearchCredits, validateInput, sanitizeInput } from '@/lib/api-middleware';
 
 export async function POST(request: NextRequest) {
   try {
-    const { posts, businessPlans, sessionId } = await request.json();
-
-    if (!posts || !Array.isArray(posts) || posts.length === 0) {
-      return NextResponse.json<APIResponse<null>>({
-        success: false,
-        error: 'Posts array is required',
-      }, { status: 400 });
+    // Check authentication
+    const authResult = await requireAuthentication(request);
+    if (!authResult.success) {
+      return authResult.response;
     }
 
-    if (!businessPlans || !Array.isArray(businessPlans) || businessPlans.length === 0) {
-      return NextResponse.json<APIResponse<null>>({
-        success: false,
-        error: 'Business plans array is required',
-      }, { status: 400 });
+    // Check and consume research credits for report generation
+    const creditResult = await requireResearchCredits(authResult.user.id, 'generate_report');
+    if (!creditResult.success) {
+      return creditResult.response;
     }
 
-    if (!sessionId) {
+    const rawData = await request.json();
+    const { posts, businessPlans, sessionId } = sanitizeInput(rawData);
+
+    // Validate input
+    const validation = validateInput(rawData, [
+      { field: 'posts', type: 'array', required: true, minLength: 1 },
+      { field: 'businessPlans', type: 'array', required: true, minLength: 1 },
+      { field: 'sessionId', type: 'string', required: true, minLength: 1, maxLength: 100 }
+    ]);
+
+    if (!validation.isValid) {
       return NextResponse.json<APIResponse<null>>({
         success: false,
-        error: 'Session ID is required',
+        error: `Invalid input: ${validation.errors.join(', ')}`,
       }, { status: 400 });
     }
 
