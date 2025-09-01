@@ -1,4 +1,6 @@
+
 'use client';
+export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -8,7 +10,9 @@ import SignupForm from '@/components/auth/SignupForm';
 import { BarChart3, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
-export default function AuthPage() {
+import { Suspense } from 'react';
+
+function AuthPageInner() {
   const [mode, setMode] = useState<'login' | 'signup'>('signup');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const { user, loading } = useAuth();
@@ -145,5 +149,13 @@ export default function AuthPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense>
+      <AuthPageInner />
+    </Suspense>
   );
 }

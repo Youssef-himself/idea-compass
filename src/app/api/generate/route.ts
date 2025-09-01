@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import AIAnalyzer from '@/lib/openai';
 import { APIResponse, RedditPost, Category, AnalysisConfig, GeneratedReport } from '@/types';

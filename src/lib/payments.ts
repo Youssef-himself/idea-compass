@@ -13,50 +13,13 @@ export interface PaymentResponse {
 export class PaymentService {
   /**
    * Create a Stripe checkout session and redirect to payment
+   * Currently disabled until Stripe is configured
    */
   static async createStripeCheckout(plan: 'pro' | 'premium'): Promise<PaymentResponse> {
-    try {
-      // Call our API to create checkout session
-      const response = await fetch('/api/payments/stripe/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ plan }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        return {
-          success: false,
-          error: data.error || 'Failed to create checkout session',
-        };
-      }
-
-      // Redirect to Stripe Checkout
-      const stripe = await getStripe();
-      const { error } = await stripe.redirectToCheckout({
-        sessionId: data.sessionId,
-      });
-
-      if (error) {
-        return {
-          success: false,
-          error: error.message,
-        };
-      }
-
-      return {
-        success: true,
-        sessionId: data.sessionId,
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        error: error.message || 'An unexpected error occurred',
-      };
-    }
+    return {
+      success: false,
+      error: 'Stripe payments are currently disabled'
+    };
   }
 
   /**

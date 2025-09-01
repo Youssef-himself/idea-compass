@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import RedditAPI from '@/lib/reddit';
 import { APIResponse, RedditPost, SearchFilters, ScrapingProgress } from '@/types';

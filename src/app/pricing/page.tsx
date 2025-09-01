@@ -11,41 +11,25 @@ export default function PricingPage() {
   const { user, profile } = useAuth();
   const [loading, setLoading] = useState<string | null>(null);
 
-  // Handle payment initiation
-  const handlePayment = async (planName: string, isCurrentPlan: boolean, paymentMethod: 'stripe' | 'paypal' = 'stripe') => {
+  // Handle plan selection
+  const handlePlanSelect = (planName: string, isCurrentPlan: boolean) => {
     if (isCurrentPlan) {
       window.location.href = '/dashboard';
       return;
     }
     
-    if (!user) {
-      window.location.href = `/auth?plan=${planName.toLowerCase()}&redirect=research`;
-      return;
-    }
-    
     if (planName === 'Free') {
-      window.location.href = '/research';
+      if (!user) {
+        window.location.href = `/auth?plan=free&redirect=research`;
+      } else {
+        window.location.href = '/research';
+      }
       return;
     }
 
-    // Handle paid plan upgrades
-    if (planName === 'Pro' || planName === 'Premium') {
-      setLoading(planName);
-      
-      try {
-        const result = paymentMethod === 'stripe' 
-          ? await PaymentService.createStripeCheckout(planName.toLowerCase() as 'pro' | 'premium')
-          : await PaymentService.createPayPalPayment(planName.toLowerCase() as 'pro' | 'premium');
-        
-        if (!result.success && result.error) {
-          alert(`Payment failed: ${result.error}`);
-        }
-      } catch (error) {
-        console.error('Payment error:', error);
-        alert('An error occurred while processing your payment. Please try again.');
-      } finally {
-        setLoading(null);
-      }
+    // Redirect to waitlist for paid plans
+    if (['Pro', 'Premium'].includes(planName)) {
+      window.location.href = `/waitlist?plan=${planName.toLowerCase()}`;
     }
   };
 
@@ -187,9 +171,9 @@ export default function PricingPage() {
                   </div>
                 </div>
 
-                <div className="mt-8 space-y-2">
+                <div className="mt-8">
                   <button
-                    onClick={() => handlePayment(plan.name, plan.current, 'stripe')}
+                    onClick={() => handlePlanSelect(plan.name, plan.current)}
                     disabled={loading === plan.name}
                     className={`w-full py-3 px-6 rounded-lg text-center font-medium transition-colors ${
                       plan.current
@@ -216,25 +200,12 @@ export default function PricingPage() {
                             : `Choose ${plan.name}`
                           : plan.name === 'Free'
                           ? 'Switch to Free'
-                          : `Upgrade to ${plan.name} (Stripe)`
+                          : `Upgrade to ${plan.name}`
                         }
                         {!plan.current && <ArrowRight className="inline-block ml-2 w-4 h-4" />}
                       </>
                     )}
                   </button>
-                  
-                  {/* PayPal button for paid plans */}
-                  {user && ['Pro', 'Premium'].includes(plan.name) && !plan.current && (
-                    <button
-                      onClick={() => handlePayment(plan.name, plan.current, 'paypal')}
-                      disabled={loading === plan.name}
-                      className={`w-full py-2 px-6 rounded-lg text-center font-medium transition-colors bg-yellow-500 text-white hover:bg-yellow-600 ${
-                        loading === plan.name ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
-                    >
-                      {loading === plan.name ? 'Processing...' : `Pay with PayPal`}
-                    </button>
-                  )}
                 </div>
                 
                 {!user && (
@@ -388,10 +359,10 @@ export default function PricingPage() {
                 </Link>
                 {profile?.plan !== 'premium' && (
                   <Link
-                    href="/contact?upgrade=true"
+                    href={`/waitlist?plan=${profile?.plan === 'free' ? 'pro' : 'premium'}`}
                     className="inline-flex items-center px-6 py-3 border border-white text-base font-medium rounded-md text-white hover:bg-blue-700 transition-colors"
                   >
-                    {profile?.plan === 'free' ? 'Upgrade to Pro' : 'Upgrade to Premium'}
+                    {profile?.plan === 'free' ? 'Join Pro Waitlist' : 'Join Premium Waitlist'}
                   </Link>
                 )}
               </div>

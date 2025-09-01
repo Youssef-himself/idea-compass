@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { APIResponse, RedditPost, BusinessPlan, GeneratedReport } from '@/types';
 import { kvDb, pgDb } from '@/lib/database';
