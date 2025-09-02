@@ -63,8 +63,13 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
+    console.log('[Discover API] About to call RedditAPI.discoverSubreddits...');
+    console.log('[Discover API] Sanitized keywords:', sanitizedKeywords);
+    
     // Discover subreddits using Reddit API
     const subreddits = await RedditAPI.discoverSubreddits(sanitizedKeywords);
+    
+    console.log(`[Discover API] Successfully discovered ${subreddits.length} subreddits`);
 
     return NextResponse.json<APIResponse<SubredditMetadata[]>>({
       success: true,
@@ -73,11 +78,27 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in discover API:', error);
+    console.error('[Discover API] CRITICAL ERROR in discover endpoint:');
+    console.error('[Discover API] Error type:', error instanceof Error ? error.constructor.name : typeof error);
+    console.error('[Discover API] Error message:', error instanceof Error ? error.message : String(error));
+    console.error('[Discover API] Error stack:', error instanceof Error ? error.stack : 'No stack trace available');
+    console.error('[Discover API] Full error object:', error);
+    
+    // Provide more specific error messages
+    let userFriendlyMessage = 'Failed to discover subreddits';
+    if (error instanceof Error) {
+      if (error.message.includes('Could not fetch results from Reddit API')) {
+        userFriendlyMessage = 'Could not connect to Reddit API. This may be due to network issues, rate limiting, or Reddit API being temporarily unavailable. Please try again in a few minutes.';
+      } else if (error.message.includes('Rate limit')) {
+        userFriendlyMessage = 'Reddit API rate limit exceeded. Please wait a moment before trying again.';
+      } else {
+        userFriendlyMessage = error.message;
+      }
+    }
     
     return NextResponse.json<APIResponse<null>>({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to discover subreddits',
+      error: userFriendlyMessage,
     }, { status: 500 });
   }
 }

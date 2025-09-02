@@ -82,8 +82,22 @@ export class RedditAPI {
   private static rateLimiter = new SimpleRateLimiter();
   private static baseUrl = 'https://www.reddit.com';
 
+  // Log Reddit API credentials for debugging
+  private static logCredentials(): void {
+    console.log('[Reddit API] =================================================');
+    console.log('[Reddit API] Environment Variables Check:');
+    console.log(`[Reddit API] Using Client ID: ${process.env.REDDIT_CLIENT_ID || 'NOT SET'}`);
+    console.log(`[Reddit API] Using Client Secret starting with: ${process.env.REDDIT_CLIENT_SECRET?.substring(0, 4) || 'NOT SET'}...`);
+    console.log(`[Reddit API] Using User Agent: IdeaCompass/1.0 (Market Research Tool) by /u/IdeaCompass`);
+    console.log(`[Reddit API] Base URL: ${this.baseUrl}`);
+    console.log('[Reddit API] =================================================');
+  }
+
   // Simple subreddit discovery (based on desktop discover_subreddits function)
   static async discoverSubreddits(keywords: string[]): Promise<SubredditMetadata[]> {
+    console.log('[Reddit API] Executing discoverSubreddits function...');
+    this.logCredentials();
+    
     if (!keywords || keywords.length === 0) {
       throw new Error('Keywords are required for subreddit discovery');
     }
@@ -102,18 +116,27 @@ export class RedditAPI {
         const searchUrl = `${this.baseUrl}/subreddits/search.json?q=${encodeURIComponent(keyword)}&type=sr&limit=10&sort=relevance`;
         
         try {
+          console.log(`[Reddit API] Making search request to: ${searchUrl}`);
+          console.log(`[Reddit API] Request headers: User-Agent: 'IdeaCompass/1.0 (Market Research Tool) by /u/IdeaCompass'`);
+          console.log(`[Reddit API] Request timeout: ${SCRAPING_CONFIG.requestTimeout}ms`);
+          
           const response = await fetch(searchUrl, {
             headers: {
-              'User-Agent': 'IdeaCompass/1.0 (Market Research Tool)',
+              'User-Agent': 'IdeaCompass/1.0 (Market Research Tool) by /u/IdeaCompass',
             },
             signal: AbortSignal.timeout(SCRAPING_CONFIG.requestTimeout)
           });
           
-          console.log(`📨 API Response for "${keyword}": ${response.status}`);
+          console.log(`[Reddit API] Raw response status: ${response.status} ${response.statusText}`);
+          console.log(`[Reddit API] Response headers:`, Object.fromEntries(response.headers.entries()));
           
           if (!response.ok) {
             this.rateLimiter.recordFailure();
-            console.warn(`⚠️ Search failed for "${keyword}": ${response.status}`);
+            console.error(`[Reddit API] CRITICAL ERROR - Search failed for "${keyword}":`);
+            console.error(`[Reddit API] Status: ${response.status} ${response.statusText}`);
+            console.error(`[Reddit API] URL: ${searchUrl}`);
+            const errorText = await response.text().catch(() => 'Could not read error response');
+            console.error(`[Reddit API] Response body: ${errorText}`);
             continue;
           }
           
@@ -164,7 +187,11 @@ export class RedditAPI {
           console.log(`Added ${addedCount} subreddits for "${keyword}"`);
           
         } catch (error) {
-          console.error(`Search error for "${keyword}":`, error);
+          console.error(`[Reddit API] CRITICAL ERROR during search for "${keyword}":`);
+          console.error(`[Reddit API] Error type: ${error instanceof Error ? error.constructor.name : typeof error}`);
+          console.error(`[Reddit API] Error message: ${error instanceof Error ? error.message : String(error)}`);
+          console.error(`[Reddit API] Error stack:`, error instanceof Error ? error.stack : 'No stack trace available');
+          console.error(`[Reddit API] Full error object:`, error);
         }
       }
       
@@ -173,20 +200,22 @@ export class RedditAPI {
         .sort((a, b) => b.subscribers - a.subscribers)
         .slice(0, 15);
       
-      // If no results found, provide fallback popular subreddits
+      // REMOVED FALLBACK - Let the real error surface
       if (sortedResults.length === 0) {
-        console.log('No subreddits found via API, providing fallback communities');
-        const fallbackSubreddits = this.getFallbackSubreddits(keywords);
-        console.log(`✅ Discovery complete: ${fallbackSubreddits.length} fallback subreddits provided`);
-        return fallbackSubreddits;
+        console.error('[Reddit API] CRITICAL: No subreddits found via API and fallback has been removed');
+        throw new Error('Could not fetch results from Reddit API. The search returned no results. This may indicate a connectivity issue, rate limiting, or API authentication problem.');
       }
       
       console.log(`✅ Discovery complete: ${sortedResults.length} subreddits found`);
       return sortedResults;
       
     } catch (error) {
-      console.error('❌ Subreddit discovery failed:', error);
-      throw new Error(`Discovery failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('[Reddit API] CRITICAL ERROR in discoverSubreddits:');
+      console.error('[Reddit API] Error type:', error instanceof Error ? error.constructor.name : typeof error);
+      console.error('[Reddit API] Error message:', error instanceof Error ? error.message : String(error));
+      console.error('[Reddit API] Error stack:', error instanceof Error ? error.stack : 'No stack trace available');
+      console.error('[Reddit API] Full error object:', error);
+      throw new Error(`Reddit API discovery failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -245,6 +274,11 @@ export class RedditAPI {
     keywords: string[],
     onProgress?: (progress: ScrapingProgress) => void
   ): Promise<RedditPost[]> {
+    console.log('[Reddit API] Executing scrapeSubreddit function...');
+    console.log(`[Reddit API] Subreddit: ${subredditName}`);
+    console.log(`[Reddit API] Keywords:`, keywords);
+    this.logCredentials();
+    
     if (!subredditName) {
       throw new Error('Subreddit name is required');
     }
@@ -270,15 +304,27 @@ export class RedditAPI {
         startTime
       });
       
+      console.log(`[Reddit API] Making posts request to: ${postsUrl}`);
+      console.log(`[Reddit API] Request headers: User-Agent: 'IdeaCompass/1.0 (Market Research Tool) by /u/IdeaCompass'`);
+      console.log(`[Reddit API] Request timeout: ${SCRAPING_CONFIG.requestTimeout}ms`);
+      
       const response = await fetch(postsUrl, {
         headers: {
-          'User-Agent': 'IdeaCompass/1.0 (Market Research Tool)',
+          'User-Agent': 'IdeaCompass/1.0 (Market Research Tool) by /u/IdeaCompass',
         },
         signal: AbortSignal.timeout(SCRAPING_CONFIG.requestTimeout)
       });
       
+      console.log(`[Reddit API] Raw response status: ${response.status} ${response.statusText}`);
+      console.log(`[Reddit API] Response headers:`, Object.fromEntries(response.headers.entries()));
+      
       if (!response.ok) {
-        throw new Error(`Failed to fetch posts: HTTP ${response.status}`);
+        console.error(`[Reddit API] CRITICAL ERROR - Failed to fetch posts from r/${subredditName}:`);
+        console.error(`[Reddit API] Status: ${response.status} ${response.statusText}`);
+        console.error(`[Reddit API] URL: ${postsUrl}`);
+        const errorText = await response.text().catch(() => 'Could not read error response');
+        console.error(`[Reddit API] Response body: ${errorText}`);
+        throw new Error(`Failed to fetch posts from r/${subredditName}: HTTP ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
@@ -355,7 +401,12 @@ export class RedditAPI {
       return scrapedPosts;
       
     } catch (error) {
-      console.error(`❌ Error scraping r/${subredditName}:`, error);
+      console.error(`[Reddit API] CRITICAL ERROR in scrapeSubreddit for r/${subredditName}:`);
+      console.error(`[Reddit API] Error type: ${error instanceof Error ? error.constructor.name : typeof error}`);
+      console.error(`[Reddit API] Error message: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(`[Reddit API] Error stack:`, error instanceof Error ? error.stack : 'No stack trace available');
+      console.error(`[Reddit API] Full error object:`, error);
+      
       onProgress?.({
         subreddit: subredditName,
         totalPosts: 0,
@@ -430,7 +481,11 @@ export class RedditAPI {
 
   // Add comments to existing posts (like desktop comments handling)
   static async addCommentsToPost(post: RedditPost): Promise<RedditPost> {
+    console.log(`[Reddit API] Executing addCommentsToPost function for post ${post.id}...`);
+    this.logCredentials();
+    
     if (!post.permalink) {
+      console.log(`[Reddit API] No permalink found for post ${post.id}, skipping comments`);
       return post;
     }
 
@@ -440,15 +495,26 @@ export class RedditAPI {
       // Fetch comments for the post (like desktop version with limit)
       const commentsUrl = `${this.baseUrl}${post.permalink}.json?limit=${SCRAPING_CONFIG.commentsPerPost}&sort=top`;
       
+      console.log(`[Reddit API] Making comments request to: ${commentsUrl}`);
+      console.log(`[Reddit API] Request headers: User-Agent: 'IdeaCompass/1.0 (Market Research Tool) by /u/IdeaCompass'`);
+      console.log(`[Reddit API] Request timeout: ${SCRAPING_CONFIG.requestTimeout}ms`);
+      
       const response = await fetch(commentsUrl, {
         headers: {
-          'User-Agent': 'IdeaCompass/1.0 (Market Research Tool)',
+          'User-Agent': 'IdeaCompass/1.0 (Market Research Tool) by /u/IdeaCompass',
         },
         signal: AbortSignal.timeout(SCRAPING_CONFIG.requestTimeout)
       });
       
+      console.log(`[Reddit API] Comments response status: ${response.status} ${response.statusText}`);
+      console.log(`[Reddit API] Response headers:`, Object.fromEntries(response.headers.entries()));
+      
       if (!response.ok) {
-        console.warn(`Failed to fetch comments for post ${post.id}`);
+        console.error(`[Reddit API] CRITICAL ERROR - Failed to fetch comments for post ${post.id}:`);
+        console.error(`[Reddit API] Status: ${response.status} ${response.statusText}`);
+        console.error(`[Reddit API] URL: ${commentsUrl}`);
+        const errorText = await response.text().catch(() => 'Could not read error response');
+        console.error(`[Reddit API] Response body: ${errorText}`);
         return post;
       }
       
@@ -483,7 +549,11 @@ export class RedditAPI {
       };
       
     } catch (error) {
-      console.warn(`Error fetching comments for post ${post.id}:`, error);
+      console.error(`[Reddit API] CRITICAL ERROR in addCommentsToPost for post ${post.id}:`);
+      console.error(`[Reddit API] Error type: ${error instanceof Error ? error.constructor.name : typeof error}`);
+      console.error(`[Reddit API] Error message: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(`[Reddit API] Error stack:`, error instanceof Error ? error.stack : 'No stack trace available');
+      console.error(`[Reddit API] Full error object:`, error);
       return post;
     }
   }
