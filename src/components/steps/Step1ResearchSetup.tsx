@@ -29,7 +29,7 @@ export default function Step1ResearchSetup({
   initialFilters 
 }: Step1EnhancedProps) {
   const { profile } = useAuth();
-  const isFreeUser = profile?.plan === 'free';
+  const isFreeUser = profile?.plan === 'free' && profile?.role !== 'ADMIN';
   const [dataSource, setDataSource] = useState<DataSourceType>(initialDataSource);
   const [keywords, setKeywords] = useState<string[]>(initialKeywords);
   const [currentKeyword, setCurrentKeyword] = useState('');

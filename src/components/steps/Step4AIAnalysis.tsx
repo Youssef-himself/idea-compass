@@ -14,7 +14,7 @@ export default function Step4AIAnalysis({
   sessionId
 }: Step4Props) {
   const { profile } = useAuth();
-  const isFreeUser = profile?.plan === 'free';
+  const isFreeUser = profile?.plan === 'free' && profile?.role !== 'ADMIN';
   const [currentPhase, setCurrentPhase] = useState<'initial' | 'phase-a' | 'phase-b'>('initial');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [businessIdeas, setBusinessIdeas] = useState<BusinessIdea[]>([]);

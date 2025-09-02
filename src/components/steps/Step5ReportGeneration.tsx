@@ -18,7 +18,7 @@ export default function Step5ReportGeneration({
   onStartNew 
 }: Step5Props) {
   const { profile } = useAuth();
-  const isFreeUser = profile?.plan === 'free';
+  const isFreeUser = profile?.plan === 'free' && profile?.role !== 'ADMIN';
   const [report, setReport] = useState<GeneratedReport | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);

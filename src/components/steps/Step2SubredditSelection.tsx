@@ -12,7 +12,7 @@ export default function Step2SubredditSelection({
   selectedSubreddits = [] 
 }: Step2Props) {
   const { profile } = useAuth();
-  const isFreeUser = profile?.plan === 'free';
+  const isFreeUser = profile?.plan === 'free' && profile?.role !== 'ADMIN';
   const [selected, setSelected] = useState<string[]>(selectedSubreddits);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');

@@ -14,7 +14,8 @@ export async function POST(request: NextRequest) {
 
     // Check user plan for lite vs full report
     const user = await AuthHelpers.getCurrentUser();
-    const isLiteReport = !user || (await AuthHelpers.getUserProfile(user.id))?.plan === 'free';
+    const profile = user ? await AuthHelpers.getUserProfile(user.id) : null;
+    const isLiteReport = !user || (profile?.plan === 'free' && profile?.role !== 'ADMIN');
 
     // Generate DOCX document
     const doc = await (isLiteReport ? generateLiteReportDOCX(report) : generateReportDOCX(report));

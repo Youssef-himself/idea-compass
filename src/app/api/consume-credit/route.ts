@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       const profile = await AuthHelpers.getUserProfile(user.id)
       
       let reason = 'No credits available'
-      if (profile?.plan === 'free') {
+      if (profile?.plan === 'free' && profile?.role !== 'ADMIN') {
         if (remainingCredits <= 0) {
           reason = 'Monthly credit limit reached. Upgrade to get more credits.'
         } else if (dailyRemaining <= 0) {

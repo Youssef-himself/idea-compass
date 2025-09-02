@@ -146,7 +146,7 @@ export class AuthHelpers {
     }
 
     // For free plan, check both monthly and daily limits
-    if (profile.plan === 'free') {
+    if (profile.plan === 'free' && profile.role !== 'ADMIN') {
       const dailyLimit = SUBSCRIPTION_PLANS.free.dailyLimit
       const dailyRemaining = Math.max(0, dailyLimit - dailyUsed)
       const hasCredits = profile.research_credits > 0 && dailyRemaining > 0
@@ -203,7 +203,7 @@ export class AuthHelpers {
     }
 
     // For free plan, check daily limit
-    if (profile.plan === 'free') {
+    if (profile.plan === 'free' && profile.role !== 'ADMIN') {
       const dailyLimit = SUBSCRIPTION_PLANS.free.dailyLimit
       if (dailyUsed >= dailyLimit) {
         return { success: false, reason: 'Daily credit limit reached' }

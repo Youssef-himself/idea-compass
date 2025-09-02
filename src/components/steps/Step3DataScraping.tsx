@@ -15,7 +15,7 @@ export default function Step3DataScraping({
   onExportData 
 }: Step3Props) {
   const { profile } = useAuth();
-  const isFreeUser = profile?.plan === 'free';
+  const isFreeUser = profile?.plan === 'free' && profile?.role !== 'ADMIN';
   const [isScrapingU, setIsScrapingU] = useState(false);
   const [scrapedData, setScrapedData] = useState<RedditPost[]>([]);
   const [progress, setProgress] = useState<ScrapingProgress[]>([]);
