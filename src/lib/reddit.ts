@@ -78,9 +78,17 @@ function calculateKeywordMatches(text: string, keywords: string[]): string[] {
   return matchedKeywords;
 }
 
+// Token caching interface and storage
+interface CachedToken {
+  accessToken: string;
+  expiresAt: number;
+}
+
 export class RedditAPI {
   private static rateLimiter = new SimpleRateLimiter();
   private static baseUrl = 'https://www.reddit.com';
+  private static oauthBaseUrl = 'https://oauth.reddit.com';
+  private static tokenCache: CachedToken | null = null;
 
   // Log Reddit API credentials for debugging
   private static logCredentials(): void {
@@ -90,7 +98,87 @@ export class RedditAPI {
     console.log(`[Reddit API] Using Client Secret starting with: ${process.env.REDDIT_CLIENT_SECRET?.substring(0, 4) || 'NOT SET'}...`);
     console.log(`[Reddit API] Using User Agent: IdeaCompass/1.0 (Market Research Tool) by /u/IdeaCompass`);
     console.log(`[Reddit API] Base URL: ${this.baseUrl}`);
+    console.log(`[Reddit API] OAuth URL: ${this.oauthBaseUrl}`);
     console.log('[Reddit API] =================================================');
+  }
+
+  // Get Reddit access token using Client Credentials Grant
+  private static async getRedditAccessToken(): Promise<string> {
+    console.log('[Reddit API] Executing getRedditAccessToken function...');
+    
+    // Check if we have a valid cached token
+    if (this.tokenCache && Date.now() < this.tokenCache.expiresAt) {
+      console.log('[Reddit API] Using cached access token');
+      return this.tokenCache.accessToken;
+    }
+
+    // Validate environment variables
+    if (!process.env.REDDIT_CLIENT_ID || !process.env.REDDIT_CLIENT_SECRET) {
+      throw new Error('Reddit API credentials not found. Please ensure REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET environment variables are set.');
+    }
+
+    try {
+      console.log('[Reddit API] Requesting new access token from Reddit...');
+      
+      // Create Basic Auth header: base64(CLIENT_ID:CLIENT_SECRET)
+      const credentials = `${process.env.REDDIT_CLIENT_ID}:${process.env.REDDIT_CLIENT_SECRET}`;
+      const base64Credentials = Buffer.from(credentials).toString('base64');
+      
+      console.log(`[Reddit API] Making token request with Client ID: ${process.env.REDDIT_CLIENT_ID}`);
+      console.log(`[Reddit API] Request URL: https://www.reddit.com/api/v1/access_token`);
+      console.log(`[Reddit API] Request method: POST`);
+      console.log(`[Reddit API] Auth header: Basic ${base64Credentials.substring(0, 10)}...`);
+
+      const response = await fetch('https://www.reddit.com/api/v1/access_token', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${base64Credentials}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': 'IdeaCompass/1.0 (Market Research Tool) by /u/IdeaCompass',
+        },
+        body: 'grant_type=client_credentials&scope=read',
+        signal: AbortSignal.timeout(SCRAPING_CONFIG.requestTimeout)
+      });
+
+      console.log(`[Reddit API] Token response status: ${response.status} ${response.statusText}`);
+      console.log(`[Reddit API] Response headers:`, Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Could not read error response');
+        console.error(`[Reddit API] CRITICAL ERROR - Token request failed:`);
+        console.error(`[Reddit API] Status: ${response.status} ${response.statusText}`);
+        console.error(`[Reddit API] Response body: ${errorText}`);
+        throw new Error(`Reddit token request failed: HTTP ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const tokenData = await response.json();
+      console.log(`[Reddit API] Token response keys: ${Object.keys(tokenData).join(', ')}`);
+
+      if (!tokenData.access_token) {
+        console.error(`[Reddit API] CRITICAL ERROR - No access_token in response:`, tokenData);
+        throw new Error('Reddit API did not return an access token');
+      }
+
+      // Cache the token with expiration (Reddit tokens typically expire in 1 hour, we cache for 50 minutes to be safe)
+      const expiresIn = tokenData.expires_in || 3600; // Default to 1 hour if not specified
+      const expiresAt = Date.now() + (expiresIn - 600) * 1000; // Subtract 10 minutes for safety
+
+      this.tokenCache = {
+        accessToken: tokenData.access_token,
+        expiresAt
+      };
+
+      console.log(`[Reddit API] ✅ Successfully obtained access token, expires in ${Math.round((expiresAt - Date.now()) / 60000)} minutes`);
+      return tokenData.access_token;
+
+    } catch (error) {
+      console.error(`[Reddit API] CRITICAL ERROR in getRedditAccessToken:`);
+      console.error(`[Reddit API] Error type: ${error instanceof Error ? error.constructor.name : typeof error}`);
+      console.error(`[Reddit API] Error message: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(`[Reddit API] Error stack:`, error instanceof Error ? error.stack : 'No stack trace available');
+      console.error(`[Reddit API] Full error object:`, error);
+      throw new Error(`Reddit token authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   // Simple subreddit discovery (based on desktop discover_subreddits function)
@@ -107,21 +195,25 @@ export class RedditAPI {
     const seenSubreddits = new Set<string>();
     
     try {
+      // Get access token first
+      const accessToken = await this.getRedditAccessToken();
+      
       // Search for each keyword (like desktop version)
       for (const keyword of keywords) {
         console.log(`Searching for: "${keyword}"`);
         
         await this.rateLimiter.wait();
         
-        const searchUrl = `${this.baseUrl}/subreddits/search.json?q=${encodeURIComponent(keyword)}&type=sr&limit=10&sort=relevance`;
+        const searchUrl = `${this.oauthBaseUrl}/subreddits/search.json?q=${encodeURIComponent(keyword)}&type=sr&limit=10&sort=relevance`;
         
         try {
           console.log(`[Reddit API] Making search request to: ${searchUrl}`);
-          console.log(`[Reddit API] Request headers: User-Agent: 'IdeaCompass/1.0 (Market Research Tool) by /u/IdeaCompass'`);
+          console.log(`[Reddit API] Request headers: Authorization: Bearer ${accessToken.substring(0, 10)}...`);
           console.log(`[Reddit API] Request timeout: ${SCRAPING_CONFIG.requestTimeout}ms`);
           
           const response = await fetch(searchUrl, {
             headers: {
+              'Authorization': `Bearer ${accessToken}`,
               'User-Agent': 'IdeaCompass/1.0 (Market Research Tool) by /u/IdeaCompass',
             },
             signal: AbortSignal.timeout(SCRAPING_CONFIG.requestTimeout)
@@ -290,10 +382,13 @@ export class RedditAPI {
     const startTime = new Date();
     
     try {
+      // Get access token first
+      const accessToken = await this.getRedditAccessToken();
+      
       await this.rateLimiter.wait();
       
       // Fetch posts (new posts like desktop version)
-      const postsUrl = `${this.baseUrl}/r/${subredditName}/new.json?limit=${SCRAPING_CONFIG.postsPerBatch}`;
+      const postsUrl = `${this.oauthBaseUrl}/r/${subredditName}/new.json?limit=${SCRAPING_CONFIG.postsPerBatch}`;
       
       onProgress?.({
         subreddit: subredditName,
@@ -305,11 +400,12 @@ export class RedditAPI {
       });
       
       console.log(`[Reddit API] Making posts request to: ${postsUrl}`);
-      console.log(`[Reddit API] Request headers: User-Agent: 'IdeaCompass/1.0 (Market Research Tool) by /u/IdeaCompass'`);
+      console.log(`[Reddit API] Request headers: Authorization: Bearer ${accessToken.substring(0, 10)}...`);
       console.log(`[Reddit API] Request timeout: ${SCRAPING_CONFIG.requestTimeout}ms`);
       
       const response = await fetch(postsUrl, {
         headers: {
+          'Authorization': `Bearer ${accessToken}`,
           'User-Agent': 'IdeaCompass/1.0 (Market Research Tool) by /u/IdeaCompass',
         },
         signal: AbortSignal.timeout(SCRAPING_CONFIG.requestTimeout)
@@ -490,17 +586,21 @@ export class RedditAPI {
     }
 
     try {
+      // Get access token first
+      const accessToken = await this.getRedditAccessToken();
+      
       await this.rateLimiter.wait();
       
       // Fetch comments for the post (like desktop version with limit)
-      const commentsUrl = `${this.baseUrl}${post.permalink}.json?limit=${SCRAPING_CONFIG.commentsPerPost}&sort=top`;
+      const commentsUrl = `${this.oauthBaseUrl}${post.permalink}.json?limit=${SCRAPING_CONFIG.commentsPerPost}&sort=top`;
       
       console.log(`[Reddit API] Making comments request to: ${commentsUrl}`);
-      console.log(`[Reddit API] Request headers: User-Agent: 'IdeaCompass/1.0 (Market Research Tool) by /u/IdeaCompass'`);
+      console.log(`[Reddit API] Request headers: Authorization: Bearer ${accessToken.substring(0, 10)}...`);
       console.log(`[Reddit API] Request timeout: ${SCRAPING_CONFIG.requestTimeout}ms`);
       
       const response = await fetch(commentsUrl, {
         headers: {
+          'Authorization': `Bearer ${accessToken}`,
           'User-Agent': 'IdeaCompass/1.0 (Market Research Tool) by /u/IdeaCompass',
         },
         signal: AbortSignal.timeout(SCRAPING_CONFIG.requestTimeout)

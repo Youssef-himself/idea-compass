@@ -53,6 +53,15 @@ ADMIN_ACCESS_GUIDE.md
 admin-credentials.*
 jwt-secret.*
 admin-tokens.*
+admin-users.json
+admin-config.*
+
+# API keys and secrets
+openai-key.*
+supabase-key.*
+reddit-api.*
+google-api.*
+api-keys.*
 
 # Database files
 *.db
@@ -62,6 +71,7 @@ database-migration.sql
 *.sql.backup
 db-backup/
 migrations/local/
+supabase-local/
 
 # Logs and debug files
 *.log
@@ -106,6 +116,17 @@ mock-data/
 .test-env
 cypress/videos/
 cypress/screenshots/
+playwright-report/
+test-results/
+coverage/
+.nyc_output/
+
+# Research and scraping data
+scraped-data/
+reddit-data/
+research-cache/
+data-exports/
+temp-reports/
 
 # Package manager files
 package-lock.json.backup
@@ -117,6 +138,18 @@ build-analysis/
 bundle-analyzer/
 .vercel/
 .deployment/
+.next-build-id
+stats.json
+bundle-stats.json
+
+# Docker files (if used)
+.dockerignore.local
+docker-compose.override.yml
+Dockerfile.local
+
+# CI/CD files
+.github-env
+deployment-config.local.yml
 
 # vercel
 .vercel
@@ -124,3 +157,26 @@ bundle-analyzer/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Security and sensitive data
+*.backup
+backup/
+backups/
+*.bak
+*.orig
+config.local.*
+local-config.*
+private/
+confidential/
+
+# User-generated content (if storing locally)
+uploads/
+user-data/
+profile-pictures/
+exported-reports/
+
+# Environment-specific files
+.env.backup
+.env.*.local
+.env.staging
+.env.development.backup
