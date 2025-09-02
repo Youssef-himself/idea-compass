@@ -92,7 +92,10 @@ export type Database = {
           full_name: string | null
           avatar_url: string | null
           plan: 'free' | 'pro' | 'premium'
+          role: 'USER' | 'ADMIN'
           research_credits: number
+          daily_credits_used: number
+          last_credit_reset_at: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           paypal_subscription_id: string | null
@@ -108,7 +111,10 @@ export type Database = {
           full_name?: string | null
           avatar_url?: string | null
           plan?: 'free' | 'pro' | 'premium'
+          role?: 'USER' | 'ADMIN'
           research_credits?: number
+          daily_credits_used?: number
+          last_credit_reset_at?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           paypal_subscription_id?: string | null
@@ -124,7 +130,10 @@ export type Database = {
           full_name?: string | null
           avatar_url?: string | null
           plan?: 'free' | 'pro' | 'premium'
+          role?: 'USER' | 'ADMIN'
           research_credits?: number
+          daily_credits_used?: number
+          last_credit_reset_at?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           paypal_subscription_id?: string | null
@@ -157,6 +166,23 @@ export type Database = {
           action?: string
           credits_used?: number
           metadata?: Record<string, any> | null
+          created_at?: string
+        }
+      }
+      waitlist_emails: {
+        Row: {
+          id: string
+          email: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          email: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
           created_at?: string
         }
       }

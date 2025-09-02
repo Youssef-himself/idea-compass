@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
 import { GeneratedReport } from '@/types';
+import { AuthHelpers } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,8 +12,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Report data is required' }, { status: 400 });
     }
 
+    // Check user plan for lite vs full report
+    const user = await AuthHelpers.getCurrentUser();
+    const isLiteReport = !user || (await AuthHelpers.getUserProfile(user.id))?.plan === 'free';
+
     // Generate HTML content for the report
-    const htmlContent = generateReportHTML(report);
+    const htmlContent = isLiteReport ? generateLiteReportHTML(report) : generateReportHTML(report);
 
     // Launch Puppeteer and generate PDF
     const browser = await puppeteer.launch({
@@ -53,7 +58,7 @@ export async function POST(request: NextRequest) {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="IdeaCompass-Report-${report.id}.pdf"`,
+        'Content-Disposition': `attachment; filename="IdeaCompass-${isLiteReport ? 'Lite-' : ''}Report-${report.id}.pdf"`,
       },
     });
 
@@ -357,6 +362,232 @@ function generateReportHTML(report: GeneratedReport): string {
           <ul style="margin: 0; padding-left: 15px;">
             ${report.sourceCitation.map(citation => `<li style="margin-bottom: 4px;">${citation}</li>`).join('')}
           </ul>
+        </div>
+      </body>
+    </html>
+  `;
+}
+
+function generateLiteReportHTML(report: GeneratedReport): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>${report.title} - Lite Version</title>
+        <style>
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+          }
+          .title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 10px;
+          }
+          .subtitle {
+            font-size: 16px;
+            color: #6b7280;
+          }
+          .lite-badge {
+            background: #fbbf24;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+          }
+          .metadata {
+            background: #f3f4f6;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+          }
+          .metadata-item {
+            text-align: center;
+          }
+          .metadata-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2563eb;
+            display: block;
+          }
+          .metadata-label {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          .section {
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+          }
+          .section-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e5e7eb;
+          }
+          .executive-summary {
+            background: #f8fafc;
+            padding: 20px;
+            border-left: 4px solid #2563eb;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 25px;
+          }
+          .finding-item {
+            margin-bottom: 12px;
+            padding: 12px;
+            background: #f9fafb;
+            border-left: 3px solid #10b981;
+            border-radius: 0 4px 4px 0;
+          }
+          .finding-number {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: #2563eb;
+            color: white;
+            text-align: center;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: bold;
+            line-height: 24px;
+            margin-right: 10px;
+          }
+          .business-plan-item {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f3f4f6;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+          }
+          .business-plan-title {
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 10px;
+          }
+          .score-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+          }
+          .score-item {
+            text-align: center;
+            padding: 8px;
+            border-radius: 4px;
+          }
+          .market-score {
+            background: #dbeafe;
+            color: #1e40af;
+          }
+          .feasibility-score {
+            background: #d1fae5;
+            color: #059669;
+          }
+          .upgrade-notice {
+            background: #fef3c7;
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 30px;
+          }
+          .upgrade-notice h4 {
+            color: #92400e;
+            margin-bottom: 10px;
+          }
+          .upgrade-notice p {
+            color: #b45309;
+            margin-bottom: 15px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">${report.title}<span class="lite-badge">LITE VERSION</span></div>
+          <div class="subtitle">Basic Market Research Summary</div>
+        </div>
+
+        <div class="metadata">
+          <div class="metadata-item">
+            <span class="metadata-value">${report.metadata.totalPosts.toLocaleString()}</span>
+            <span class="metadata-label">Posts Analyzed</span>
+          </div>
+          <div class="metadata-item">
+            <span class="metadata-value">${report.metadata.totalSubreddits}</span>
+            <span class="metadata-label">Subreddits</span>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Executive Summary</div>
+          <div class="executive-summary">
+            ${report.executiveSummary.split('\n').map(p => `<p>${p}</p>`).join('')}
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-title">Key Findings</div>
+          ${report.keyFindings.map((finding, index) => `
+            <div class="finding-item">
+              <span class="finding-number">${index + 1}</span>
+              ${finding}
+            </div>
+          `).join('')}
+        </div>
+
+        ${report.businessPlans && report.businessPlans.length > 0 ? `
+        <div class="section">
+          <div class="section-title">Business Opportunities (Summary)</div>
+          ${report.businessPlans.map(plan => `
+            <div class="business-plan-item">
+              <div class="business-plan-title">${plan.title}</div>
+              <div class="score-grid">
+                <div class="score-item market-score">
+                  <strong>Market: ${plan.marketPotential}/10</strong>
+                </div>
+                <div class="score-item feasibility-score">
+                  <strong>Feasibility: ${plan.feasibility}/10</strong>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        ` : ''}
+
+        <div class="upgrade-notice">
+          <h4>🚀 Upgrade to Pro or Premium for the Full Report</h4>
+          <p>This lite version includes only the executive summary, key findings, and basic business opportunity scores. Upgrade to access:</p>
+          <ul style="text-align: left; max-width: 500px; margin: 0 auto; color: #b45309;">
+            <li>Detailed business plans with market analysis</li>
+            <li>Monetization strategies and action plans</li>
+            <li>Comprehensive market research sections</li>
+            <li>Strategic recommendations</li>
+            <li>Full supporting evidence and citations</li>
+          </ul>
+          <p style="margin-top: 15px; font-weight: bold;">Visit our pricing page to learn more about upgrading!</p>
+        </div>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 12px;">
+          Generated by IdeaCompass • ${new Date().toLocaleDateString()}
         </div>
       </body>
     </html>

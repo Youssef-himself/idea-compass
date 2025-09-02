@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Download, Loader2, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Download, Loader2, CheckCircle, AlertCircle, Clock, Lock } from 'lucide-react';
 import { Step3Props, ScrapingProgress, RedditPost } from '@/types';
 import StepNavigation from '@/components/ui/StepNavigation';
+import { useAuth } from '@/contexts/AuthContext';
+import UpgradeModal from '@/components/ui/UpgradeModal';
 
 export default function Step3DataScraping({ 
   selectedSubreddits,
@@ -12,12 +14,16 @@ export default function Step3DataScraping({
   onBack, 
   onExportData 
 }: Step3Props) {
+  const { profile } = useAuth();
+  const isFreeUser = profile?.plan === 'free';
   const [isScrapingU, setIsScrapingU] = useState(false);
   const [scrapedData, setScrapedData] = useState<RedditPost[]>([]);
   const [progress, setProgress] = useState<ScrapingProgress[]>([]);
   const [sessionId] = useState(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [error, setError] = useState<string | null>(null);
   const [progressInterval, setProgressInterval] = useState<NodeJS.Timeout | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [creditConsumed, setCreditConsumed] = useState(false);
 
   // Function to poll progress during scraping with enhanced safety
   const pollProgress = async () => {
@@ -172,6 +178,29 @@ export default function Step3DataScraping({
   }, [isScrapingU, progressInterval, sessionId]);
 
   const handleStartScraping = async () => {
+    // Consume credit first for free users
+    if (isFreeUser && !creditConsumed) {
+      try {
+        const creditResponse = await fetch('/api/consume-credit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'data_scraping' })
+        });
+        
+        const creditResult = await creditResponse.json();
+        
+        if (!creditResult.success) {
+          setError(creditResult.error || 'Unable to consume credit');
+          return;
+        }
+        
+        setCreditConsumed(true);
+      } catch (err) {
+        setError('Failed to process credit. Please try again.');
+        return;
+      }
+    }
+
     setIsScrapingU(true);
     setError(null);
     setProgress([]);
@@ -287,6 +316,10 @@ export default function Step3DataScraping({
   };
 
   const handleExport = () => {
+    if (isFreeUser) {
+      setShowUpgradeModal(true);
+      return;
+    }
     // Create comprehensive CSV export with posts and comments
     const csvRows: string[] = [];
     
@@ -657,10 +690,18 @@ export default function Step3DataScraping({
             {scrapedData.length > 0 && (
               <button
                 onClick={handleExport}
-                className="flex items-center gap-2 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                className={`flex items-center gap-2 px-4 py-3 border rounded-lg transition-colors relative ${
+                  isFreeUser
+                    ? 'border-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                }`}
+                disabled={isFreeUser}
               >
                 <Download className="w-4 h-4" />
                 Export Complete Dataset
+                {isFreeUser && (
+                  <Lock className="w-4 h-4 ml-1" />
+                )}
               </button>
             )}
             <button
@@ -685,6 +726,14 @@ export default function Step3DataScraping({
           </ul>
         </div>
       </div>
+      
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature="Data Export"
+        description="Export comprehensive datasets with all posts, comments, and metadata. Available in Pro and Premium plans."
+      />
     </div>
   );
 }

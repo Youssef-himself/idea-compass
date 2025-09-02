@@ -6,6 +6,7 @@ import { SUBSCRIPTION_PLANS } from '@/lib/auth';
 import { useAuth } from '@/contexts/AuthContext';
 import { PaymentService } from '@/lib/payments';
 import { useState } from 'react';
+import { PLAN_DETAILS } from '@/config/plans';
 
 export default function PricingPage() {
   const { user, profile } = useAuth();
@@ -30,70 +31,53 @@ export default function PricingPage() {
     // Redirect to waitlist for paid plans
     if (['Pro', 'Premium'].includes(planName)) {
       window.location.href = `/waitlist?plan=${planName.toLowerCase()}`;
+      return;
     }
   };
 
-  const plans = [
-    {
-      name: 'Free',
-      price: '$0',
-      period: '',
-      description: 'Perfect for trying out IdeaCompass',
-      icon: <BarChart3 className="w-8 h-8 text-blue-600" />,
-      credits: '3 total research credits',
-      users: '1 user',
-      features: [
-        'Basic research tools',
-        'Reddit data scraping',
-        'Basic reports',
-        'PDF export',
-        'Community support'
-      ],
-      popular: false,
-      current: profile?.plan === 'free'
-    },
-    {
-      name: 'Pro',
-      price: '$19',
-      period: '/month',
-      description: 'For serious market researchers and businesses',
-      icon: <Zap className="w-8 h-8 text-purple-600" />,
-      credits: '50 research credits per month',
-      users: '1 user',
-      features: [
-        'Advanced research tools',
-        'Priority support',
-        'Detailed analytics',
-        'Export to multiple formats',
-        'Custom analysis prompts',
-        'Advanced AI categorization',
-        'Monthly credit refresh'
-      ],
-      popular: true,
-      current: profile?.plan === 'pro'
-    },
-    {
-      name: 'Premium',
-      price: '$49',
-      period: '/month',
-      description: 'For teams and growing organizations',
-      icon: <Crown className="w-8 h-8 text-amber-600" />,
-      credits: 'Unlimited research credits',
-      users: 'Up to 3 users',
-      features: [
-        'All Pro features',
-        'Team collaboration',
-        'Unlimited research',
-        'Custom branding',
-        'API access',
-        'Dedicated account manager',
-        'Priority feature requests',
-        'Advanced integrations'
-      ],
-      popular: false,
-      current: profile?.plan === 'premium'
+  const getPlanIcon = (planName: string) => {
+    switch (planName) {
+      case 'Free':
+        return <BarChart3 className="w-8 h-8 text-blue-600" />;
+      case 'Pro':
+        return <Zap className="w-8 h-8 text-purple-600" />;
+      case 'Premium':
+        return <Crown className="w-8 h-8 text-amber-600" />;
+      default:
+        return <BarChart3 className="w-8 h-8 text-blue-600" />;
     }
-  ];
+  };
+
+  const getPlanDescription = (planName: string) => {
+    switch (planName) {
+      case 'Free':
+        return 'Perfect for trying out IdeaCompass with limited features';
+      case 'Pro':
+        return 'For serious market researchers and businesses';
+      case 'Premium':
+        return 'For teams and growing organizations';
+      default:
+        return '';
+    }
+  };
+
+  const plans = PLAN_DETAILS.map((planDetail) => ({
+    name: planDetail.name,
+    price: planDetail.price,
+    period: planDetail.price === 'Waitlist' ? '' : '/month',
+    description: getPlanDescription(planDetail.name),
+    icon: getPlanIcon(planDetail.name),
+    credits: planDetail.name === 'Free' 
+      ? `${planDetail.credits} research credits (${planDetail.dailyCreditLimit} per day)`
+      : planDetail.name === 'Premium'
+      ? `${planDetail.credits} research credits`
+      : `${planDetail.credits} research credits per month`,
+    users: '1 user', // This remains hardcoded as it's not in the config
+    features: planDetail.features,
+    limitations: planDetail.limitations,
+    popular: planDetail.name === 'Pro',
+    current: profile?.plan === planDetail.name.toLowerCase()
+  }));
 
   return (
     <div className="min-h-screen bg-white">
@@ -197,10 +181,10 @@ export default function PricingPage() {
                           : !user 
                           ? plan.name === 'Free' 
                             ? 'Start Free' 
-                            : `Choose ${plan.name}`
+                            : `Join ${plan.name} Waitlist`
                           : plan.name === 'Free'
                           ? 'Switch to Free'
-                          : `Upgrade to ${plan.name}`
+                          : `Join ${plan.name} Waitlist`
                         }
                         {!plan.current && <ArrowRight className="inline-block ml-2 w-4 h-4" />}
                       </>
@@ -245,7 +229,7 @@ export default function PricingPage() {
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Research Actions</h3>
                 <p className="text-gray-600 text-sm">
-                  Each research action (discovering subreddits, scraping data, generating reports) consumes 1 credit
+                  One (1) credit is consumed the moment you select a subreddit and proceed to the data scraping step. Actions like generating ideas or reports afterwards do not consume additional credits for the same research.
                 </p>
               </div>
               
@@ -253,9 +237,9 @@ export default function PricingPage() {
                 <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Zap className="w-8 h-8 text-purple-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Monthly Refresh</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Daily Replenishment</h3>
                 <p className="text-gray-600 text-sm">
-                  Pro plan credits refresh every month. Free plan credits are one-time only
+                  Free plan: {PLAN_DETAILS[0].dailyCreditLimit} credits replenish daily (max {PLAN_DETAILS[0].credits}). Pro plan: {PLAN_DETAILS[1].credits} credits refresh monthly.
                 </p>
               </div>
               
@@ -265,7 +249,7 @@ export default function PricingPage() {
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Unlimited Access</h3>
                 <p className="text-gray-600 text-sm">
-                  Premium users get unlimited credits and can perform as many research actions as needed
+                  Premium users get {PLAN_DETAILS[2].credits} credits and can perform as many research actions as needed
                 </p>
               </div>
             </div>
@@ -281,7 +265,7 @@ export default function PricingPage() {
                 How do research credits work?
               </h3>
               <p className="text-gray-600">
-                Each major research action (discovering subreddits, scraping data, generating reports) consumes 1 credit. Free users get 3 total credits, Pro users get 50 per month, and Premium users get unlimited.
+                One (1) credit is consumed the moment you select a subreddit and proceed to the data scraping step. Actions like generating ideas or reports afterwards do not consume additional credits for the same research. Free users get {PLAN_DETAILS[0].credits} total credits ({PLAN_DETAILS[0].dailyCreditLimit} replenish daily), Pro users get {PLAN_DETAILS[1].credits} per month, and Premium users get {PLAN_DETAILS[2].credits}.
               </p>
             </div>
             
@@ -308,7 +292,7 @@ export default function PricingPage() {
                 Do unused credits roll over?
               </h3>
               <p className="text-gray-600">
-                Pro plan credits refresh monthly and don't roll over. Premium plans have unlimited credits. Free plan credits are one-time and don't expire.
+                Pro plan credits refresh monthly and don't roll over. Premium plans have {PLAN_DETAILS[2].credits} credits. Free plan credits replenish daily ({PLAN_DETAILS[0].dailyCreditLimit} per day, max {PLAN_DETAILS[0].credits} total).
               </p>
             </div>
             
@@ -317,7 +301,7 @@ export default function PricingPage() {
                 Is there a free trial for paid plans?
               </h3>
               <p className="text-gray-600">
-                Our Free plan lets you try core features with 3 research credits. This gives you a full experience of the platform before deciding to upgrade.
+                Our Free plan lets you try core features with {PLAN_DETAILS[0].credits} research credits ({PLAN_DETAILS[0].dailyCreditLimit} replenish daily). This gives you a full experience of the platform before deciding to upgrade.
               </p>
             </div>
             
@@ -344,7 +328,7 @@ export default function PricingPage() {
               ? profile.plan === 'premium' 
                 ? 'You have unlimited access to all research features!'
                 : 'Upgrade your plan to get more credits and advanced features.'
-              : 'Start with 3 free research credits and upgrade when you need more.'
+              : `Start with ${PLAN_DETAILS[0].dailyCreditLimit} free research credits and upgrade when you need more.`
             }
           </p>
           <div className="mt-8">

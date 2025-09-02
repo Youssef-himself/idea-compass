@@ -24,8 +24,14 @@ import {
   Target,
   Play,
   ExternalLink,
-  Filter
+  Filter,
+  Shield,
+  Crown,
+  CreditCard,
+  UserPlus,
+  Bell
 } from 'lucide-react';
+import { PLAN_DETAILS, getFreeplan, getProPlan, getPremiumPlan } from '@/config/plans';
 
 interface FeatureSection {
   id: string;
@@ -44,8 +50,32 @@ interface FAQ {
 export default function HelpPage() {
   const [expandedSection, setExpandedSection] = useState<string>('overview');
   const [expandedFAQ, setExpandedFAQ] = useState<string | null>(null);
+  
+  const freePlan = getFreeplan();
+  const proPlan = getProPlan();
+  const premiumPlan = getPremiumPlan();
 
   const featureSections: FeatureSection[] = [
+    {
+      id: 'account-setup',
+      title: 'Account Setup & Plans',
+      description: 'Create your account and choose the right subscription plan for your needs',
+      icon: UserPlus,
+      steps: [
+        'Sign up with a professional email address (Gmail, Outlook, or company email)',
+        'Verify your email address to activate your account',
+        `Start with Free plan (${freePlan.credits} research credits - ${freePlan.dailyCreditLimit} credits replenish daily)`,
+        `Upgrade to Pro (${proPlan.price}, ${proPlan.credits} credits) or Premium (${premiumPlan.price}, ${premiumPlan.credits} credits) as needed`,
+        'Join the waitlist for paid plans during beta period'
+      ],
+      tips: [
+        `Free plan gives you ${freePlan.credits} total credits with daily replenishment`,
+        'Pro plan ideal for regular researchers and consultants',
+        'Premium plan best for teams and heavy users',
+        'Temporary/disposable emails are not allowed for security',
+        `Credits reset monthly for Pro users, ${premiumPlan.credits} for Premium`
+      ]
+    },
     {
       id: 'research-setup',
       title: 'Research Setup',
@@ -62,7 +92,8 @@ export default function HelpPage() {
         'Use specific, industry-relevant keywords for better results',
         'Combine broad and niche terms (e.g., "AI", "machine learning", "startup")',
         'CSV files should have columns: title, content, author, score, date',
-        'Use "month" or "week" time range for trending discussions'
+        'Use "month" or "week" time range for trending discussions',
+        'Each research session consumes 1 credit (except Premium users)'
       ]
     },
     {
@@ -81,7 +112,8 @@ export default function HelpPage() {
         'Focus on high-quality communities with active discussions',
         'Mix large and niche subreddits for diverse perspectives',
         'Check subscriber count and activity levels',
-        'Select 5-15 subreddits for optimal data quality'
+        'Select 5-15 subreddits for optimal data quality',
+        'Free users can access basic discovery features'
       ]
     },
     {
@@ -100,7 +132,8 @@ export default function HelpPage() {
         'Collection typically takes 2-5 minutes per subreddit',
         'Quality scoring helps identify the most valuable posts',
         'Include comments for deeper insights into user needs',
-        'Aim for 100-500 posts for comprehensive analysis'
+        'Aim for 100-500 posts for comprehensive analysis',
+        'Pro and Premium users get priority processing'
       ]
     },
     {
@@ -111,12 +144,13 @@ export default function HelpPage() {
       steps: [
         'Phase 1: AI identifies distinct business opportunities',
         'Review generated business ideas with descriptions',
-        'Select 1-3 most promising ideas for detailed analysis',
+        'Select 1-3 most promising ideas for detailed analysis (Free: 1 idea, Pro/Premium: unlimited)',
         'Phase 2: AI creates comprehensive business plans',
         'Review detailed plans with market analysis and features'
       ],
       tips: [
         'Phase 1 analysis takes 1-2 minutes to identify opportunities',
+        'Free users can view 1 business idea, upgrade for more',
         'Select diverse ideas to explore different market angles',
         'Phase 2 provides market potential scores (1-10)',
         'Focus on ideas with high feasibility scores for solo founders'
@@ -138,15 +172,32 @@ export default function HelpPage() {
         'Include executive summary for stakeholder presentations',
         'Market analysis section provides validation insights',
         'Action recommendations offer concrete next steps',
-        'Export formats maintain professional formatting'
+        'Export formats maintain professional formatting',
+        'Premium users get advanced report customization'
       ]
     }
   ];
 
   const faqs: FAQ[] = [
     {
+      question: "What subscription plans are available?",
+      answer: `IdeaCompass offers three plans: Free (${freePlan.credits} research credits with daily replenishment, perfect for trying the platform), Pro (${proPlan.price}, ${proPlan.credits} credits/month, ideal for regular researchers), and Premium (${premiumPlan.price}, ${premiumPlan.credits} credits, best for teams and heavy users). During beta, paid plans are available via waitlist.`
+    },
+    {
+      question: "How do research credits work?",
+      answer: `One (1) credit is consumed the moment you select a subreddit and proceed to the data scraping step. Actions like generating ideas or reports afterwards do not consume additional credits for the same research. Free users get ${freePlan.credits} total credits with ${freePlan.dailyCreditLimit} replenishing daily. Pro users get ${proPlan.credits} credits per month. Premium users have ${premiumPlan.credits} credits. Credits reset monthly for Pro users.`
+    },
+    {
       question: "What data sources does IdeaCompass support?",
       answer: "IdeaCompass supports two main data sources: Reddit Discovery (automatically finds and scrapes relevant subreddits) and CSV Upload (analyze your own data). For CSV uploads, ensure your file has columns for title, content, author, score, and date."
+    },
+    {
+      question: "How do I join the waitlist for paid plans?",
+      answer: "Click on any Pro or Premium plan button to join the waitlist. You'll be notified when payment processing is available. Currently, payment systems are temporarily disabled while we enhance the platform."
+    },
+    {
+      question: "What's the difference between Free and Pro plans for AI analysis?",
+      answer: "Free users can view 1 business idea from Phase 1 analysis and need to upgrade to see additional ideas. Pro and Premium users can view all generated business ideas and select multiple ideas for detailed business plan development."
     },
     {
       question: "How accurate is the AI business analysis?",
@@ -155,6 +206,10 @@ export default function HelpPage() {
     {
       question: "How long does the research process take?",
       answer: "A complete research session typically takes 15-30 minutes: Setup (2-3 min), Subreddit Selection (3-5 min), Data Collection (5-10 min), AI Analysis (3-5 min), and Report Generation (2-5 min). CSV uploads skip the discovery and collection phases."
+    },
+    {
+      question: "Is there an admin system for managing the platform?",
+      answer: "Yes, IdeaCompass includes a comprehensive admin system for platform management. Admin access is restricted to authorized personnel and includes user management, usage analytics, and system monitoring capabilities."
     },
     {
       question: "What makes a good research topic?",
@@ -181,50 +236,64 @@ export default function HelpPage() {
       answer: "CSV files should include columns for title, content, author, score, and date. The system automatically maps common column names. Maximum file size is 10MB with up to 10,000 rows for optimal performance."
     },
     {
-      question: "How does the scoring system work?",
-      answer: "Market Potential (1-10) evaluates market size, demand, and growth potential. Feasibility (1-10) assesses technical complexity, resource requirements, and time-to-market for solo founders. Higher scores indicate better opportunities."
-    },
-    {
       question: "Can I save and resume my research sessions?",
-      answer: "Currently, research sessions are completed in one sitting. However, you can export data at any step and re-upload as CSV for future analysis. Consider bookmarking promising subreddits for future research."
+      answer: "Currently, research sessions are completed in one sitting. However, you can export data at any step and re-upload as CSV for future analysis. Your account dashboard tracks your usage and remaining credits."
     },
     {
       question: "What makes the AI analysis reliable?",
       answer: "Our AI is trained on successful business patterns, market validation frameworks, and startup methodologies. It analyzes genuine user discussions for authentic pain points. However, always validate insights with direct user research."
     },
     {
+      question: "How does the free plan credit system work?",
+      answer: `The free plan provides ${freePlan.credits} total research credits with a daily replenishment system. You get ${freePlan.dailyCreditLimit} credits back each day, up to a maximum of ${freePlan.credits} credits. This means you can conduct ${freePlan.dailyCreditLimit} research sessions daily, or save up credits for larger research projects when needed.`
+    },
+    {
+      question: "What are the current subscription plan prices?",
+      answer: `We offer three plans: Free (${freePlan.price} - ${freePlan.credits} credits with daily replenishment), Pro (${proPlan.price} - ${proPlan.credits} credits monthly), and Premium (${premiumPlan.price} - ${premiumPlan.credits} credits). During our beta period, paid plans are available via waitlist. All plans include full feature access with credit-based usage limits.`
+    },
+    {
       question: "How often should I conduct market research?",
       answer: "Quarterly research helps track market evolution and emerging trends. Research before major product decisions, when entering new markets, or when user feedback suggests changing needs. Stay connected to your target communities."
+    },
+    {
+      question: "Is my account and research data secure?",
+      answer: "Yes, IdeaCompass implements enterprise-grade security including encrypted data storage, secure authentication, input validation, and regular security audits. Your research data is private and never shared with third parties."
     }
   ];
 
   const quickStartSteps = [
     {
       step: 1,
+      title: "Create Account",
+      description: "Sign up and verify your professional email",
+      time: "1-2 min"
+    },
+    {
+      step: 2,
       title: "Setup Research",
       description: "Enter keywords and choose data source",
       time: "2-3 min"
     },
     {
-      step: 2,
+      step: 3,
       title: "Select Communities",
       description: "Choose relevant subreddits or upload CSV",
       time: "3-5 min"
     },
     {
-      step: 3,
+      step: 4,
       title: "Collect Data",
       description: "Automated data scraping",
       time: "5-10 min"
     },
     {
-      step: 4,
+      step: 5,
       title: "AI Analysis",
       description: "Generate business opportunities",
       time: "3-5 min"
     },
     {
-      step: 5,
+      step: 6,
       title: "Export Report",
       description: "Download professional insights",
       time: "2-5 min"
@@ -249,7 +318,7 @@ export default function HelpPage() {
 
         {/* Navigation */}
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
-          <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-4">
             <button
               onClick={() => setExpandedSection('overview')}
               className={`p-4 rounded-lg text-left transition-all ${
@@ -259,6 +328,17 @@ export default function HelpPage() {
               <Target className="w-6 h-6 text-blue-600 mb-2" />
               <h3 className="font-semibold">Quick Start</h3>
               <p className="text-sm text-gray-600">Get started in 5 steps</p>
+            </button>
+            
+            <button
+              onClick={() => setExpandedSection('plans')}
+              className={`p-4 rounded-lg text-left transition-all ${
+                expandedSection === 'plans' ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
+              }`}
+            >
+              <CreditCard className="w-6 h-6 text-blue-600 mb-2" />
+              <h3 className="font-semibold">Plans & Credits</h3>
+              <p className="text-sm text-gray-600">Subscription plans and usage</p>
             </button>
             
             <button
@@ -323,6 +403,14 @@ export default function HelpPage() {
                   </p>
                   <div className="flex items-center gap-2 mb-2">
                     <CheckCircle className="w-5 h-5 text-green-600" />
+                    <span className="text-sm text-gray-700">Secure authentication system</span>
+                  </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <span className="text-sm text-gray-700">Flexible subscription plans</span>
+                  </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
                     <span className="text-sm text-gray-700">AI-powered opportunity discovery</span>
                   </div>
                   <div className="flex items-center gap-2 mb-2">
@@ -368,12 +456,113 @@ export default function HelpPage() {
 
               <div className="text-center">
                 <Link
-                  href="/research"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  href="/auth?redirect=research"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium mr-4"
                 >
-                  Start Your Research
+                  Get Started Free
                   <ArrowRight className="w-5 h-5" />
                 </Link>
+                <Link
+                  href="/pricing"
+                  className="inline-flex items-center gap-2 px-6 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium"
+                >
+                  View Plans
+                  <Crown className="w-5 h-5" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Plans & Credits Section */}
+        {expandedSection === 'plans' && (
+          <div className="space-y-8">
+            <div className="bg-white rounded-lg shadow-sm border p-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-8">Subscription Plans & Credits</h2>
+              
+              <div className="grid md:grid-cols-3 gap-8 mb-8">
+                {PLAN_DETAILS.map((plan, index) => (
+                  <div key={plan.name} className={`border rounded-lg p-6 ${
+                    plan.name === 'Pro' 
+                      ? 'border-2 border-blue-500 relative' 
+                      : plan.name === 'Premium' 
+                      ? 'bg-purple-50' 
+                      : ''
+                  }`}>
+                    {plan.name === 'Pro' && (
+                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                        <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium">Popular</span>
+                      </div>
+                    )}
+                    <div className="text-center mb-6">
+                      {plan.name === 'Premium' && (
+                        <div className="flex items-center justify-center mb-2">
+                          <Crown className="w-5 h-5 text-purple-600 mr-1" />
+                          <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
+                        </div>
+                      )}
+                      {plan.name !== 'Premium' && (
+                        <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
+                      )}
+                      <p className="text-3xl font-bold text-gray-900 mt-2">
+                        {plan.price}
+                        {plan.price !== 'Waitlist' && plan.price !== '€0' && <span className="text-sm text-gray-600">/month</span>}
+                      </p>
+                      <p className="text-gray-600">
+                        {plan.name === 'Free' ? 'Perfect for trying out' : 
+                         plan.name === 'Pro' ? 'For regular researchers' : 
+                         'For teams & heavy users'}
+                      </p>
+                    </div>
+                    <ul className="space-y-3 mb-6">
+                      {plan.features.map((feature, idx) => (
+                        <li key={idx} className="flex items-center text-sm text-gray-700">
+                          <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                    <Link 
+                      href={plan.name === 'Free' ? "/auth?plan=free" : `/waitlist?plan=${plan.name.toLowerCase()}`}
+                      className={`w-full block text-center py-2 px-4 rounded-lg transition-colors ${
+                        plan.name === 'Free' 
+                          ? 'bg-gray-100 text-gray-800 hover:bg-gray-200' 
+                          : plan.name === 'Pro'
+                          ? 'bg-blue-600 text-white hover:bg-blue-700'
+                          : 'bg-purple-600 text-white hover:bg-purple-700'
+                      }`}
+                    >
+                      {plan.name === 'Free' ? 'Start Free' : 'Join Waitlist'}
+                    </Link>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-blue-900 mb-4">How Credits Work</h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-medium text-blue-900 mb-2">Credit Consumption:</h4>
+                    <ul className="space-y-2 text-sm text-blue-800">
+                      <li>• <strong>1 Credit is used</strong> when you start data scraping for a chosen subreddit.</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-blue-900 mb-2">Included Actions (Do not cost extra credits):</h4>
+                    <ul className="space-y-2 text-sm text-blue-800">
+                      <li>• Generating a list of ideas from the scraped data.</li>
+                      <li>• Generating a Lite Report for a chosen idea.</li>
+                      <li>• Exporting the final Lite Report.</li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <h4 className="font-medium text-blue-900 mb-2">Actions Not Available on Free Plan:</h4>
+                  <ul className="space-y-2 text-sm text-blue-800">
+                    <li>• Uploading your own data files.</li>
+                    <li>• Exporting the raw scraped data (CSV file).</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>

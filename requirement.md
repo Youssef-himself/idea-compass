@@ -14,7 +14,7 @@ Your task is divided into two distinct parts. First, you will generate the code 
 1.  **Restore Pricing on Frontend:**
     *   Go to the pricing page component.
     *   Remove all "TBD" or placeholder text.
-    *   Set the price for the **"Pro Plan" to "$19/month"** and the **"Premium Plan" to "$49/month"**.
+    *   Set the price for the **"Pro Plan" to "$29/month"** and the **"Premium Plan" to "$99/month"**.
 
 2.  **Stripe Integration:**
     *   **Backend:** Create new, secure API endpoints to handle Stripe operations. This must include an endpoint to create a "Stripe Checkout Session" and a **Webhook endpoint** to securely listen for successful payment events from Stripe.

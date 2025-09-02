@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Loader2, Brain, BarChart3, Lightbulb, CheckSquare, Square, Sparkles, TrendingUp } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Brain, BarChart3, Lightbulb, CheckSquare, Square, Sparkles, TrendingUp, Crown } from 'lucide-react';
 import { Step4Props, BusinessIdea, BusinessPlan } from '@/types';
 import StepNavigation from '@/components/ui/StepNavigation';
+import { useAuth } from '@/contexts/AuthContext';
+import UpgradeModal from '@/components/ui/UpgradeModal';
 
 export default function Step4AIAnalysis({ 
   scrapedData, 
@@ -11,6 +13,8 @@ export default function Step4AIAnalysis({
   onBack, 
   sessionId
 }: Step4Props) {
+  const { profile } = useAuth();
+  const isFreeUser = profile?.plan === 'free';
   const [currentPhase, setCurrentPhase] = useState<'initial' | 'phase-a' | 'phase-b'>('initial');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [businessIdeas, setBusinessIdeas] = useState<BusinessIdea[]>([]);
@@ -18,6 +22,7 @@ export default function Step4AIAnalysis({
   const [error, setError] = useState<string | null>(null);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [selectedIdeaIds, setSelectedIdeaIds] = useState<string[]>([]);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // PHASE A: Generate business ideas
   const handleStartPhaseA = async () => {
@@ -344,6 +349,29 @@ export default function Step4AIAnalysis({
                 Generate Business Plans ({selectedIdeaIds.length})
               </button>
             </div>
+            
+            {/* Free user limitation notice */}
+            {isFreeUser && businessIdeas.length > 1 && (
+              <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <Crown className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-medium text-yellow-900 mb-1">
+                      Free Plan Limitation
+                    </h4>
+                    <p className="text-sm text-yellow-800 mb-2">
+                      You can see 1 of {businessIdeas.length} generated business ideas. Upgrade to Pro or Premium to view and select from all ideas.
+                    </p>
+                    <button
+                      onClick={() => setShowUpgradeModal(true)}
+                      className="text-sm font-medium text-yellow-900 hover:text-yellow-800 underline"
+                    >
+                      Upgrade to unlock all ideas →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -457,6 +485,14 @@ export default function Step4AIAnalysis({
           </ul>
         </div>
       </div>
+      
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature="Full Business Ideas Access"
+        description="View all generated business ideas and select multiple ideas for detailed business plan development. Free plan users can only see the first idea."
+      />
     </div>
   );
 }

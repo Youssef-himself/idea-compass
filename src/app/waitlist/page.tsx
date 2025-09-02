@@ -108,8 +108,8 @@ export default function WaitlistPage() {
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
               >
                 <option value="">Select a plan</option>
-                <option value="pro">Pro Plan ($19/month)</option>
-                <option value="premium">Premium Plan ($49/month)</option>
+                <option value="pro">Pro Plan ($29/month)</option>
+                <option value="premium">Premium Plan ($99/month)</option>
               </select>
             </div>
 

@@ -127,14 +127,14 @@ CREATE TRIGGER trigger_profiles_updated_at
 
 | Plan | Price | Users | Research Credits | Features |
 |------|-------|-------|------------------|----------|
-| **Free** | $0/month | 1 | 3 total | Basic research tools, Reddit scraping, Basic reports |
-| **Pro** | $19/month | 1 | 50/month | Advanced research tools, Priority support, Detailed analytics, Multi-format exports |
-| **Premium** | $49/month | 3 | Unlimited | All Pro features, Team collaboration, Custom branding, API access |
+| **Free** | $0/month | 1 | 15 total (3/day) | Basic research tools, Reddit scraping, Basic reports |
+| **Pro** | $29/month | 1 | 100/month | Advanced research tools, Priority support, Detailed analytics, Multi-format exports |
+| **Premium** | $99/month | 5 | Unlimited | All Pro features, Team collaboration, Custom branding, API access |
 
 ### Credit System Logic
 
-- **Free Plan**: Users start with 3 total research credits. No monthly reset.
-- **Pro Plan**: Users get 50 credits per month (reset monthly).
+- **Free Plan**: Users start with 15 total research credits. 3 credits replenish daily (max 15).
+- **Pro Plan**: Users get 100 credits per month (reset monthly).
 - **Premium Plan**: Unlimited credits (no consumption tracking).
 
 ## Security Features

@@ -72,7 +72,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             fullName: result.data.full_name,
             avatarUrl: result.data.avatar_url,
             plan: result.data.plan as any,
+            role: result.data.role || 'USER',
             researchCredits: result.data.research_credits,
+            dailyCreditsUsed: result.data.daily_credits_used || 0,
+            lastCreditResetAt: result.data.last_credit_reset_at ? new Date(result.data.last_credit_reset_at) : undefined,
             createdAt: new Date(result.data.created_at),
             updatedAt: new Date(result.data.updated_at),
           })

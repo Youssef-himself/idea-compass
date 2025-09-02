@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, Menu, X, User, LogOut, Settings, CreditCard } from 'lucide-react';
+import { BarChart3, Menu, X, User, LogOut, Settings, CreditCard, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from '@/components/auth/AuthModal';
 
@@ -74,7 +74,7 @@ export default function Header() {
               <div className="w-24 h-10 bg-gray-200 animate-pulse rounded-md"></div>
             ) : user ? (
               <div className="flex items-center space-x-4">
-                {profile && (
+                {profile && profile.role !== 'ADMIN' && (
                   <div className="text-sm text-gray-600">
                     Credits: <span className="font-medium text-blue-600">
                       {profile.plan === 'premium' ? '∞' : profile.researchCredits}
@@ -93,18 +93,31 @@ export default function Header() {
                     className="flex items-center space-x-2 text-gray-700 hover:text-gray-900 p-2 rounded-md hover:bg-gray-100 transition-colors"
                     aria-label="User menu"
                   >
-                    <User className="w-5 h-5" />
+                    {profile?.role === 'ADMIN' ? (
+                      <Shield className="w-5 h-5 text-red-600" />
+                    ) : (
+                      <User className="w-5 h-5" />
+                    )}
                     <span className="text-sm font-medium">
                       {profile?.fullName || user.email}
+                      {profile?.role === 'ADMIN' && (
+                        <span className="ml-1 px-2 py-0.5 text-xs bg-red-100 text-red-800 rounded-full">Admin</span>
+                      )}
                     </span>
                   </button>
                   
                   {userMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
                       <div className="py-1">
-                        {profile && (
+                        {profile && profile.role !== 'ADMIN' && (
                           <div className="px-4 py-2 text-sm text-gray-500 border-b">
                             {profile.plan.charAt(0).toUpperCase() + profile.plan.slice(1)} Plan
+                          </div>
+                        )}
+                        {profile && profile.role === 'ADMIN' && (
+                          <div className="px-4 py-2 text-sm text-red-600 border-b bg-red-50">
+                            <Shield className="w-3 h-3 inline mr-1" />
+                            Administrator
                           </div>
                         )}
                         <Link
@@ -115,14 +128,26 @@ export default function Header() {
                           <Settings className="w-4 h-4 mr-2" />
                           Dashboard
                         </Link>
-                        <Link
-                          href="/pricing"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          onClick={() => setUserMenuOpen(false)}
-                        >
-                          <CreditCard className="w-4 h-4 mr-2" />
-                          Upgrade Plan
-                        </Link>
+                        {profile && profile.role === 'ADMIN' && (
+                          <Link
+                            href="/admin"
+                            className="flex items-center px-4 py-2 text-sm text-red-700 hover:bg-red-50"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            <Shield className="w-4 h-4 mr-2" />
+                            Admin Panel
+                          </Link>
+                        )}
+                        {profile && profile.role !== 'ADMIN' && (
+                          <Link
+                            href="/pricing"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            <CreditCard className="w-4 h-4 mr-2" />
+                            Upgrade Plan
+                          </Link>
+                        )}
                         <button
                           onClick={handleSignOut}
                           className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
@@ -190,7 +215,7 @@ export default function Header() {
               
               {user ? (
                 <>
-                  {profile && (
+                  {profile && profile.role !== 'ADMIN' && (
                     <div className="px-3 py-2 text-sm text-gray-600 border-t border-gray-200">
                       Credits: <span className="font-medium text-blue-600">
                         {profile.plan === 'premium' ? '∞' : profile.researchCredits}
@@ -199,6 +224,12 @@ export default function Header() {
                       <span className="text-xs text-gray-500">
                         {profile.plan.charAt(0).toUpperCase() + profile.plan.slice(1)} Plan
                       </span>
+                    </div>
+                  )}
+                  {profile && profile.role === 'ADMIN' && (
+                    <div className="px-3 py-2 text-sm text-red-600 border-t border-gray-200 bg-red-50">
+                      <Shield className="w-3 h-3 inline mr-1" />
+                      Administrator Access
                     </div>
                   )}
                   <Link
@@ -215,13 +246,24 @@ export default function Header() {
                   >
                     Dashboard
                   </Link>
-                  <Link
-                    href="/pricing"
-                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Upgrade Plan
-                  </Link>
+                  {profile && profile.role === 'ADMIN' && (
+                    <Link
+                      href="/admin"
+                      className="block px-3 py-2 rounded-md text-base font-medium text-red-700 hover:text-red-900 hover:bg-red-50 transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Admin Panel
+                    </Link>
+                  )}
+                  {profile && profile.role !== 'ADMIN' && (
+                    <Link
+                      href="/pricing"
+                      className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Upgrade Plan
+                    </Link>
+                  )}
                   <button
                     onClick={() => {
                       setMobileMenuOpen(false);

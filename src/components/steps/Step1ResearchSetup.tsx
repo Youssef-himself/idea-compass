@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Plus, X, Filter, Loader2, ArrowRight, Upload, Database } from 'lucide-react';
+import { Search, Plus, X, Filter, Loader2, ArrowRight, Upload, Database, Lock } from 'lucide-react';
 import { SearchFilters, SubredditMetadata, RedditPost } from '@/types';
 import CSVUpload from '@/components/upload/CSVUpload';
+import { useAuth } from '@/contexts/AuthContext';
+import UpgradeModal from '@/components/ui/UpgradeModal';
 
 type DataSourceType = 'reddit' | 'csv';
 
@@ -26,6 +28,8 @@ export default function Step1ResearchSetup({
   initialDataSource = 'reddit',
   initialFilters 
 }: Step1EnhancedProps) {
+  const { profile } = useAuth();
+  const isFreeUser = profile?.plan === 'free';
   const [dataSource, setDataSource] = useState<DataSourceType>(initialDataSource);
   const [keywords, setKeywords] = useState<string[]>(initialKeywords);
   const [currentKeyword, setCurrentKeyword] = useState('');
@@ -40,9 +44,17 @@ export default function Step1ResearchSetup({
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [csvData, setCsvData] = useState<{ posts: RedditPost[]; source: string } | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeFeature, setUpgradeFeature] = useState('');
 
   const addKeyword = () => {
     if (currentKeyword.trim() && !keywords.includes(currentKeyword.trim())) {
+      // For free users, limit to 1 keyword
+      if (isFreeUser && keywords.length >= 1) {
+        setUpgradeFeature('Multiple Keywords');
+        setShowUpgradeModal(true);
+        return;
+      }
       setKeywords([...keywords, currentKeyword.trim()]);
       setCurrentKeyword('');
     }
@@ -58,6 +70,12 @@ export default function Step1ResearchSetup({
       
       // Add the current keyword if it's not empty
       if (currentKeyword.trim() && !keywords.includes(currentKeyword.trim())) {
+        // For free users, limit to 1 keyword
+        if (isFreeUser && keywords.length >= 1) {
+          setUpgradeFeature('Multiple Keywords');
+          setShowUpgradeModal(true);
+          return;
+        }
         const newKeywords = [...keywords, currentKeyword.trim()];
         setKeywords(newKeywords);
         setCurrentKeyword('');
@@ -203,13 +221,28 @@ export default function Step1ResearchSetup({
             </button>
 
             <button
-              onClick={() => setDataSource('csv')}
-              className={`p-4 border-2 rounded-lg text-left transition-all ${
+              onClick={() => {
+                if (isFreeUser) {
+                  setUpgradeFeature('Upload Data');
+                  setShowUpgradeModal(true);
+                  return;
+                }
+                setDataSource('csv');
+              }}
+              className={`p-4 border-2 rounded-lg text-left transition-all relative ${
                 dataSource === 'csv'
                   ? 'border-blue-500 bg-blue-50'
+                  : isFreeUser
+                  ? 'border-gray-200 opacity-60 cursor-not-allowed'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
+              disabled={isFreeUser}
             >
+              {isFreeUser && (
+                <div className="absolute top-2 right-2">
+                  <Lock className="w-4 h-4 text-gray-400" />
+                </div>
+              )}
               <div className="flex items-start space-x-3">
                 <Upload className="w-6 h-6 text-blue-600 mt-1" />
                 <div>
@@ -220,6 +253,9 @@ export default function Step1ResearchSetup({
                   <div className="mt-2 flex flex-wrap gap-1">
                     <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">Custom data</span>
                     <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">Flexible format</span>
+                    {isFreeUser && (
+                      <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">Pro/Premium Only</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -320,7 +356,7 @@ export default function Step1ResearchSetup({
                 value={currentKeyword}
                 onChange={(e) => setCurrentKeyword(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Enter a keyword and press Enter (e.g., 'artificial intelligence')"
+                placeholder={isFreeUser ? "Enter 1 keyword and press Enter (Free plan limit)" : "Enter a keyword and press Enter (e.g., 'artificial intelligence')"}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               />
             </div>
@@ -511,6 +547,17 @@ export default function Step1ResearchSetup({
           </ul>
         </div>
       </div>
+      
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature={upgradeFeature}
+        description={upgradeFeature === 'Upload Data' 
+          ? 'Upload your own CSV data for analysis. Available in Pro and Premium plans.'
+          : 'Add multiple keywords for comprehensive research. Free plan is limited to 1 keyword.'
+        }
+      />
     </div>
   );
 }

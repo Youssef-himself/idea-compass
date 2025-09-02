@@ -17,7 +17,10 @@ export interface UserProfile {
   fullName?: string;
   avatarUrl?: string;
   plan: SubscriptionPlan;
+  role: 'USER' | 'ADMIN';
   researchCredits: number;
+  dailyCreditsUsed: number;
+  lastCreditResetAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -29,6 +32,7 @@ export interface SubscriptionPlanDetails {
   price: number;
   users: number;
   researchCredits: number;
+  dailyLimit?: number;
   features: string[];
 }
 

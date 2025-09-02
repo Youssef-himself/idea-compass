@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Download, RotateCcw, FileText, File, Loader2, CheckCircle, Eye, Share2, Clock, AlertCircle, TrendingUp, Target, Star } from 'lucide-react';
+import { ArrowLeft, Download, RotateCcw, FileText, File, Loader2, CheckCircle, Eye, Share2, Clock, AlertCircle, TrendingUp, Target, Star, Lock, Crown } from 'lucide-react';
 import { Step5Props, GeneratedReport, BusinessPlan } from '@/types';
 import { generateSmartFilename, generateFallbackFilename, sanitizeFilename } from '@/utils/exportNaming';
 import StepNavigation from '@/components/ui/StepNavigation';
+import { useAuth } from '@/contexts/AuthContext';
+import UpgradeModal from '@/components/ui/UpgradeModal';
 
 export default function Step5ReportGeneration({ 
   posts,
@@ -15,11 +17,14 @@ export default function Step5ReportGeneration({
   onExportReport, 
   onStartNew 
 }: Step5Props) {
+  const { profile } = useAuth();
+  const isFreeUser = profile?.plan === 'free';
   const [report, setReport] = useState<GeneratedReport | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [expandedPlans, setExpandedPlans] = useState<string[]>([]);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     generateReport();
@@ -359,6 +364,11 @@ export default function Step5ReportGeneration({
               <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <Eye className="w-5 h-5" />
                 Executive Summary
+                {isFreeUser && (
+                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                    Free Access
+                  </span>
+                )}
               </h4>
               <div className="p-4 bg-white border rounded text-gray-700 leading-relaxed">
                 {report.executiveSummary}
@@ -367,7 +377,14 @@ export default function Step5ReportGeneration({
 
             {/* Key Findings */}
             <div className="mb-6">
-              <h4 className="font-semibold text-gray-900 mb-3">Key Findings</h4>
+              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                Key Findings
+                {isFreeUser && (
+                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                    Free Access
+                  </span>
+                )}
+              </h4>
               <ul className="space-y-2">
                 {report.keyFindings.map((finding, index) => (
                   <li key={index} className="flex items-start gap-2 p-3 bg-white border rounded">
@@ -385,12 +402,23 @@ export default function Step5ReportGeneration({
               <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <Target className="w-5 h-5" />
                 Business Opportunities
+                {isFreeUser && (
+                  <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                    Limited Preview
+                  </span>
+                )}
               </h4>
               <div className="space-y-3">
                 {businessPlans.map((plan) => (
-                  <div key={plan.id} className="border border-gray-200 rounded-lg">
+                  <div key={plan.id} className="border border-gray-200 rounded-lg relative">
                     <button
-                      onClick={() => togglePlan(plan.id)}
+                      onClick={() => {
+                        if (isFreeUser) {
+                          setShowUpgradeModal(true);
+                          return;
+                        }
+                        togglePlan(plan.id);
+                      }}
                       className="w-full p-4 text-left bg-white hover:bg-gray-50 rounded-lg flex items-center justify-between transition-colors"
                     >
                       <div className="flex-1">
@@ -428,8 +456,31 @@ export default function Step5ReportGeneration({
                     </button>
                     
                     {expandedPlans.includes(plan.id) && (
-                      <div className="p-4 border-t bg-gray-50">
-                        <div className="space-y-4">
+                      <div className="p-4 border-t bg-gray-50 relative">
+                        {/* Blur overlay for free users */}
+                        {isFreeUser && (
+                          <div className="absolute inset-0 bg-white bg-opacity-95 backdrop-blur-sm rounded-b-lg flex items-center justify-center z-10">
+                            <div className="text-center p-6">
+                              <Crown className="w-8 h-8 text-purple-600 mx-auto mb-3" />
+                              <h5 className="font-semibold text-gray-900 mb-2">Full Business Plan Details</h5>
+                              <p className="text-sm text-gray-600 mb-4">
+                                Upgrade to Pro or Premium to access detailed business plans with market analysis, monetization strategies, and action plans.
+                              </p>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setShowUpgradeModal(true);
+                                }}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                              >
+                                <Crown className="w-4 h-4" />
+                                Upgrade to Unlock
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className={`space-y-4 ${isFreeUser ? 'filter blur-sm' : ''}`}>
                           <div>
                             <h6 className="font-medium text-gray-800 mb-2">Core Problem:</h6>
                             <p className="text-sm text-gray-700">{plan.coreProblem}</p>
@@ -518,11 +569,35 @@ export default function Step5ReportGeneration({
           </div>
         </div>
 
+        {/* Free Plan Notice */}
+        {isFreeUser && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-start gap-3">
+              <Crown className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="font-medium text-yellow-900 mb-1">
+                  Free Plan - Lite Report
+                </h4>
+                <p className="text-sm text-yellow-800 mb-2">
+                  Your export will include the Executive Summary, Key Findings, and basic business plan titles only. 
+                  Upgrade to Pro or Premium for the complete detailed business report with full analysis.
+                </p>
+                <button
+                  onClick={() => setShowUpgradeModal(true)}
+                  className="text-sm font-medium text-yellow-900 hover:text-yellow-800 underline"
+                >
+                  Upgrade for full report →
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Export Options */}
         <div className="mb-8">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <Share2 className="w-5 h-5" />
-            Export Your Report
+            Export Your Report{isFreeUser ? ' (Lite Version)' : ''}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {exportFormats.map((format) => (
@@ -533,8 +608,12 @@ export default function Step5ReportGeneration({
                 className="flex flex-col items-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors group"
               >
                 <format.icon className="w-8 h-8 text-blue-600 mb-2 group-hover:text-blue-700" />
-                <span className="font-medium text-gray-900">{format.label}</span>
-                <span className="text-xs text-gray-500 text-center">{format.description}</span>
+                <span className="font-medium text-gray-900">
+                  {format.label}{isFreeUser ? ' (Lite)' : ''}
+                </span>
+                <span className="text-xs text-gray-500 text-center">
+                  {isFreeUser ? 'Basic summary only' : format.description}
+                </span>
               </button>
             ))}
           </div>
@@ -563,13 +642,22 @@ export default function Step5ReportGeneration({
         <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h4 className="font-medium text-blue-900 mb-2">🎉 Business Analysis Complete!</h4>
           <p className="text-blue-800 text-sm">
-            Your comprehensive business opportunity analysis has been generated successfully. 
-            The report includes {businessPlans.length} detailed business plans with market analysis 
-            and actionable next steps. You can export it in multiple formats or start a new research project.
+            {isFreeUser 
+              ? `Your business opportunity analysis (Lite version) has been generated successfully. The report includes a summary of ${businessPlans.length} business plan${businessPlans.length !== 1 ? 's' : ''} with key insights. Upgrade to Pro or Premium for the complete detailed analysis.`
+              : `Your comprehensive business opportunity analysis has been generated successfully. The report includes ${businessPlans.length} detailed business plans with market analysis and actionable next steps. You can export it in multiple formats or start a new research project.`
+            }
           </p>
         </div>
 
       </div>
+      
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature="Full Business Report"
+        description="Access complete detailed business plans with market analysis, monetization strategies, competitive analysis, and step-by-step action plans. Free plan users receive only a basic summary."
+      />
     </div>
   );
 }

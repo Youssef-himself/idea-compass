@@ -26,9 +26,9 @@ Your IdeaCompass application has been successfully transformed into a full-fledg
 ### ✅ Part 2: Subscription Plans & Usage Limits
 
 **Complete Plan System:**
-- ✅ **Free Plan**: 1 user, 3 total research credits
-- ✅ **Pro Plan**: 1 user, 50 credits/month  
-- ✅ **Premium Plan**: 3 users, unlimited credits
+- ✅ **Free Plan**: 1 user, 15 total research credits (3 replenish daily)
+- ✅ **Pro Plan**: 1 user, 100 credits/month  
+- ✅ **Premium Plan**: 5 users, unlimited credits
 
 **Backend Credit Enforcement:**
 - ✅ Database schema with `profiles` and `usage_logs` tables

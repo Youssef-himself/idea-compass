@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react';
-import { ArrowLeft, ArrowRight, Users, TrendingUp, Star, Filter, Search, Grid, List, Check, AlertCircle, Info, Eye, BarChart } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Users, TrendingUp, Star, Filter, Search, Grid, List, Check, AlertCircle, Info, Eye, BarChart, Lock } from 'lucide-react';
 import { Step2Props } from '@/types';
 import StepNavigation from '@/components/ui/StepNavigation';
+import { useAuth } from '@/contexts/AuthContext';
+import UpgradeModal from '@/components/ui/UpgradeModal';
 
 export default function Step2SubredditSelection({ 
   subreddits, 
@@ -9,7 +11,10 @@ export default function Step2SubredditSelection({
   onBack, 
   selectedSubreddits = [] 
 }: Step2Props) {
+  const { profile } = useAuth();
+  const isFreeUser = profile?.plan === 'free';
   const [selected, setSelected] = useState<string[]>(selectedSubreddits);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'relevance' | 'subscribers' | 'activity'>('relevance');
   const [filterBy, setFilterBy] = useState<'all' | 'high' | 'medium' | 'low'>('all');
@@ -52,11 +57,20 @@ export default function Step2SubredditSelection({
     if (selected.includes(subredditName)) {
       setSelected(selected.filter(s => s !== subredditName));
     } else {
+      // Check if free user trying to select more than 1 subreddit
+      if (isFreeUser && selected.length >= 1) {
+        setShowUpgradeModal(true);
+        return;
+      }
       setSelected([...selected, subredditName]);
     }
   };
 
   const selectAll = () => {
+    if (isFreeUser) {
+      setShowUpgradeModal(true);
+      return;
+    }
     setSelected(filteredAndSortedSubreddits.map(s => s.name));
   };
 
@@ -65,6 +79,10 @@ export default function Step2SubredditSelection({
   };
 
   const selectByQuality = (quality: 'high' | 'medium') => {
+    if (isFreeUser) {
+      setShowUpgradeModal(true);
+      return;
+    }
     const qualitySubreddits = filteredAndSortedSubreddits
       .filter(s => s.qualityIndicator === quality)
       .map(s => s.name);
@@ -495,14 +513,32 @@ export default function Step2SubredditSelection({
         <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <h4 className="font-medium text-blue-900 mb-2">💡 Selection Tips</h4>
           <ul className="text-sm text-blue-800 space-y-1">
-            <li>• Choose communities with high relevance scores for better research quality</li>
-            <li>• Mix large and small communities for diverse perspectives</li>
-            <li>• Consider activity levels - more active communities provide fresher insights</li>
-            <li>• Quality indicators help identify well-moderated, valuable communities</li>
-            <li>• Aim for 3-8 communities for optimal analysis depth and breadth</li>
+            {isFreeUser ? (
+              <>
+                <li>• Free plan allows analyzing 1 subreddit at a time</li>
+                <li>• Choose the most relevant community for your research</li>
+                <li>• Upgrade to Pro/Premium for multiple subreddit analysis</li>
+              </>
+            ) : (
+              <>
+                <li>• Choose communities with high relevance scores for better research quality</li>
+                <li>• Mix large and small communities for diverse perspectives</li>
+                <li>• Consider activity levels - more active communities provide fresher insights</li>
+                <li>• Quality indicators help identify well-moderated, valuable communities</li>
+                <li>• Aim for 3-8 communities for optimal analysis depth and breadth</li>
+              </>
+            )}
           </ul>
         </div>
       </div>
+      
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature="Multiple Subreddit Selection"
+        description="Free plan users can only analyze one subreddit at a time. Upgrade to Pro or Premium to select and analyze multiple communities simultaneously for richer insights."
+      />
     </div>
   );
 }
